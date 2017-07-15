@@ -1,8 +1,9 @@
 
-class Entity(object):
+class Entity(GameObject):
     """Denotes a game-world entity."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(self, **kwargs)
         #TODO: Implement
         pass
 
@@ -11,7 +12,8 @@ class Entity(object):
 class Alignment(Entity):
     """Denotes an alignment (team), which might have properties of its own."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(self, **kwargs)
         #TODO: Implement
         pass
 
@@ -20,7 +22,8 @@ class Alignment(Entity):
 class Actor(Entity):
     """Denotes an actor entity (i.e. individual that can action)."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(self, **kwargs)
         #TODO: Implement
         pass
 
