@@ -1,3 +1,4 @@
+from mafia_engine import *
 
 class Entity(GameObject):
     """Denotes a game-world entity."""

@@ -3,3 +3,7 @@
 ################################################################################
 
 /src/mafia_engine/__pycache__
+/src/mafia_engine/entity/__pycache__
+/src/mafia_engine/role/__pycache__
+/src/mafia_engine/role/__pycache__
+*.pyc

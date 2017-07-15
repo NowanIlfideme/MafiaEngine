@@ -6,7 +6,7 @@ class GameObject(object):
 
     def __init__(self, engine):
         this.engine = engine
-        pass
+        return
 
 
     pass

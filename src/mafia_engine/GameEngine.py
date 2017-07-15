@@ -1,4 +1,5 @@
 import yaml, logging
+from mafia_engine.EventManager import EventManager
 
 class GameEngine(object):
     """Defines a complete Mafia-like game."""
@@ -7,7 +8,7 @@ class GameEngine(object):
         self.logger = logging.getLogger(__name__)
         self.entities = []
         self.status = {}
-        return self
+        return
 
     def load(self,filename):
         """Loads an existing game from a file."""

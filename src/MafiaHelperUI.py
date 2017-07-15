@@ -1,7 +1,9 @@
 import sys
+from mafia_engine.GameEngine import GameEngine
 
 def main(args):
     print("Nothing done here yet, sorry!")
+    ge = GameEngine()
     return
 
 

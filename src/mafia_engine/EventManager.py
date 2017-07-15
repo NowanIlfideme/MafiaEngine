@@ -13,7 +13,7 @@ class EventManager(object):
         self.listeners = {}
         self.logger = logging.getLogger(__name__)  #normal Python logger
         self.history = None #TODO: Add history, to allow pausing and resuming of games.
-        return self
+        return
 
     def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
         """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
