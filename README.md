@@ -1,2 +1,18 @@
 # MafiaEngine
-Engine for Mafia-like games
+Engine for Mafia-like games. Currently under construction.
+
+## Planned features
+### Near-term:
+- General definition of a mafia game (via config)
+- Runnable GM tool with command-line UI
+- State saving, with full history
+
+
+### Long-term:
+- Workable API
+- Interaction with various mafia forums:
+	- Automatic thread parsing
+	- Helper for modding/GM-ing (player statistics, vote counts, etc.)
+	- Searchable history, i.e. for machine learning tasks
+- ???
+- Profit (actually probably not)
