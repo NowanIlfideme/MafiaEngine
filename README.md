@@ -15,4 +15,4 @@ Engine for Mafia-like games. Currently under construction.
 	- Helper for modding/GM-ing (player statistics, vote counts, etc.)
 	- Searchable history, i.e. for machine learning tasks
 - ???
-- Profit (actually probably not)
+- Profit! (jk)
