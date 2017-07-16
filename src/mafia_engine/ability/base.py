@@ -6,9 +6,12 @@ class Ability(GameObject):
     This is a base type for Activated and Automatic abilities
     (akin to Magic: The Gathering's system). """
 
-    def __init__(self, **kwargs):
-        super().__init__(self, **kwargs)
-
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: 
+        """
+        super().__init__(self, *args, **kwargs)
+        self.name = kwargs.get("name","")
         #TODO: Add data memebers
 
         pass
@@ -19,8 +22,11 @@ class ActivatedAbility(Ability):
     """Ability that gets activated by an Entity.
     This (usually) generates an Action and Event when used."""
 
-    def __init__(self, **kwargs):
-        super().__init__(self, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        """
+        Keys: name
+        """
         #TODO: Add data members
 
         #target restrictions, e.g. "can-self-target"
@@ -36,8 +42,11 @@ class AutomaticAbility(Ability):
     """Ability that triggers from an Event.
     This might generate a new Action + Event."""
 
-    def __init__(self, **kwargs):
-        super().__init__(self, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        """
+        Keys: name
+        """
         #TODO: Add data members
 
         pass

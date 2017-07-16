@@ -9,12 +9,16 @@ class Role(GameObject):
         - TODO: Other stuff (such as ActionPoint restrictions?)
     """
     
-    def __init__(self, alignment, **kwargs):
+    def __init__(self, **kwargs):
+        """
+        Keys: name, alignment, abilities, status
+        """
         super().__init__(self, **kwargs)
         #TODO Add local members.
-        self.alignment = alignment
-        self.status = {}    # name : value
-        self.abilities = {} # name : Ability
+        self.name = kwargs.get("name","")
+        self.aligment = kwargs.get("alignment",None)
+        self.abilities = kwargs.get("abilities",[]) # [Ability]
+        self.status = kwargs.get("status",{})       # name : value
 
         pass
 

@@ -10,12 +10,19 @@ class GameObject(object):
     (i.e. the current game, symbolized by a GameEngine reference).
     Through that, it can find the EventManager, global logger, etc."""
 
-    def __init__(self, engine):
-        this.engine = engine
+    default_engine = None
+
+    def __init__(self, *args, **kwargs):
+        
+        try:
+            self.engine = kwargs["engine"]
+        except:
+            self.engine = self.default_engine
         return
 
 
     pass
+
 
 class EventManager(object):
     """Manager for in-game events. Works as follows:
