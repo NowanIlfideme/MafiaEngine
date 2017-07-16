@@ -1,4 +1,4 @@
-from mafia_engine import *
+from mafia_engine.base import GameObject
 
 class Role(GameObject):
     """Denotes a game role, e.g. "mafioso" or "doctor".

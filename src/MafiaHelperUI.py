@@ -1,5 +1,5 @@
 import sys
-from mafia_engine.GameEngine import GameEngine
+from mafia_engine.base import GameEngine
 
 def main(args):
     print("Nothing done here yet, sorry!")

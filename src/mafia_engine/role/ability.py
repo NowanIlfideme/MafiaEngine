@@ -1,4 +1,4 @@
-from mafia_engine import GameObject
+from mafia_engine.base import GameObject
 
 
 class Ability(GameObject):
