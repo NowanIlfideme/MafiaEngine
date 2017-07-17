@@ -2,13 +2,14 @@ import sys
 from mafia_engine.base import GameEngine, GameObject
 #from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
-from mafia_engine.role import *
 from mafia_engine.ability.simple import *
 
 default_args = []
 
 def main(args):
-    print("Not much done here yet, sorry!")
+    print("Testing components:")
+
+    #
     ge = GameEngine()
     GameObject.default_engine = ge
 
@@ -22,7 +23,6 @@ def main(args):
 
     #Add town players
     for i in range(0,10):
-        #TODO: add abilities
         abils = [
             Vote(name="vote")
             ]
@@ -32,7 +32,7 @@ def main(args):
             abilities = abils
             )
         tplayer = Player(
-            name = "townie" + str(i),
+            name = "Townie" + str(i),
             roles = [trole]
             )
         ge.entities.append(tplayer)
@@ -51,13 +51,14 @@ def main(args):
             abilities = abils
             )
         mplayer = Player(
-            name = "mafioso" + str(i),
+            name = "Mafioso" + str(i),
             roles = [mrole]
             )
         ge.entities.append(mplayer)
     #
 
     ge
+    print("Finished.")
 
     return
 

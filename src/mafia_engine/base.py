@@ -23,6 +23,13 @@ class GameObject(object):
 
     pass
 
+class HistoryManager(object):
+    """Saves all events in chronological and searchable order.
+    TODO: Implement!
+    """
+
+
+    pass
 
 class EventManager(object):
     """Manager for in-game events. Works as follows:
@@ -33,10 +40,13 @@ class EventManager(object):
     History allows one to resume a game from a particular state.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: listeners (dict), history (HistoryManager)
+        """
         self.listeners = {}
         self.logger = logging.getLogger(__name__)  #normal Python logger
-        self.history = None #TODO: Add history, to allow pausing and resuming of games.
+        self.history = HistoryManager()
         return
 
     def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
@@ -67,11 +77,16 @@ class EventManager(object):
 
 class GameEngine(object):
     """Defines a complete Mafia-like game."""
-    def __init__(self):
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: entities (list), status (dict), phases (generator/None)
+        """
         self.event_manager = EventManager()
         self.logger = logging.getLogger(__name__)
-        self.entities = []
-        self.status = {}
+        self.entities = kwargs.get("entities",[])
+        self.status = kwargs.get("status",{})
+        self.phases = kwargs.get("phases",None)
         return
 
     def load(self,filename):

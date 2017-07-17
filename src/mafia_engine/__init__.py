@@ -1,2 +1,2 @@
 
-__all__ = ["base","entity","role","ability","example"]
+__all__ = ["base","entity","ability"]
