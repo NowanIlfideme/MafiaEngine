@@ -49,7 +49,7 @@ class ActivatedAbility(Ability):
         #TODO: Check phase
         if self.phase is not None:
             if self.phase.count(self.engine.phase)==0:
-                raise AbilityError(self.name + " cannot be used in phase " + self.engine.phase)
+                raise AbilityError(self.name + " cannot be used in phase " + str(self.engine.phase))
             pass
 
         #TODO: Check num of uses

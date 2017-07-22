@@ -1,4 +1,5 @@
 from mafia_engine.base import GameObject
+from mafia_engine.ability.base import *
 
 class Entity(GameObject):
     """Denotes a game-world entity."""
@@ -56,6 +57,53 @@ class Actor(Entity):
         self.roles = kwargs.get("roles",[])
 
         pass
+
+    def action(self, *args, **kwargs):
+        """
+        Key: ability, target
+        """
+
+        actor = self
+        
+        ability = kwargs.get("ability","")
+        #Find ability within roles
+        found_roles = []
+        for role in self.roles:
+            if role.find_ability(ability) is not None:
+                found_roles.append(role)
+            pass
+        if len(found_roles)==0:
+            #Try to find disambiguation
+            try:
+                r_name, ability = _disambiguize(ability) #split into role and ability
+                #Find role
+                for R in self.roles:
+                    if R.name==r_name:
+                        found_roles.append(R)
+            except: pass #len will still be 0
+        if len(found_roles)!=1:
+            raise AbilityError("Could not determine ability \
+            exactly. Found roles: " + str(found_roles))
+
+        target = kwargs.get("target","")
+
+        found_roles[0].action(ability=ability, actor=actor, target=target)
+        pass
+
+    def get_abilities(self):
+        res = []
+        for r in self.roles:
+            for a in r.abilities:
+                res.append(a)
+        return res
+
+    def get_ability_names(self):
+        return [a.name for a in self.get_abilities()]
+
+    def _disambiguize(ability="."):
+        """Breaks down ability into rolename and abilityname"""
+        q = ability.split(".", maxsplit=1)
+        return q[0], q[1]
     pass
 
 class Player(Actor):
@@ -81,11 +129,11 @@ class Role(GameObject):
         - TODO: Other stuff (such as ActionPoint restrictions?)
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Keys: name, alignment, abilities, status
         """
-        super().__init__(self, **kwargs)
+        super().__init__(self, *args, **kwargs)
         #TODO Add local members.
         self.name = kwargs.get("name","")
         self.aligment = kwargs.get("alignment",None)
@@ -94,5 +142,34 @@ class Role(GameObject):
 
         pass
 
+    def action(self, *args, **kwargs):
+        """
+        Key: ability, actor, target
+        """
+        
+        #TODO: Find ability within list, check if it's an ActivatedAbility.
+        #If everything checks out, call it.
+
+        ability = kwargs.get("ability","")
+        found_abil = self.find_ability(ability)
+
+        if not isinstance(found_abil, ActivatedAbility):
+            raise AbilityError("Ability " + str(found_abil) + " is not an ActivatedAbility.")
+
+
+        #TODO: Find actor, target.
+        actor = kwargs.get("actor","")
+        target = kwargs.get("target","")
+
+        found_abil.action(ability=found_abil, actor=actor, target=target)
+        pass
+
+    def find_ability(self, ability=""):
+        found_abil = None
+        for a in self.abilities:
+            if a.name==ability:
+                found_abil=a
+        return found_abil
+        
 
     pass

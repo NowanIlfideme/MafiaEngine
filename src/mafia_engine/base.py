@@ -105,7 +105,7 @@ class GameEngine(object):
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
         self.phases = kwargs.get("phases",PhaseGenerator())
-        self.phase = next(self.phases)
+        self.phase = None # next(self.phases) - None means game not started yet!
         return
 
     def next_phase(self):
@@ -113,8 +113,43 @@ class GameEngine(object):
         self.phase = next(self.phases)
         self.event_manager.signal(
             "phase_change",
-            {"previous_phase":old_phase,"new_phase":self.phase})
+            {"previous_phase":old_phase,"new_phase":self.phase}
+            )
         pass
+
+    def entity_by_lambda(self, lamb):
+        found_ents = []
+        for e in self.entities:
+            if lamb(e):
+                found_ents.append(e)
+        if len(found_ents)==0: return None
+        if len(found_ents)>1: return found_ents
+        return found_ents[0]
+
+
+    def entity_by_name(self, name):
+        return self.entity_by_lambda(lambda e: e.name==name)
+    """
+        found_ents = []
+        for e in self.entities:
+            if e.name==name:
+                found_ents.append(e)
+        if len(found_ents)==0: return None
+        if len(found_ents)>1: return found_ents
+        return found_ents[0]
+    """
+
+    def entity_by_type(self, type):
+        return self.entity_by_lambda(lambda e: isinstance(e, type))
+    """
+        found_ents = []
+        for e in self.entities:
+            if isinstance(e, type):
+                found_ents.append(e)
+        if len(found_ents)==0: return None
+        if len(found_ents)>1: return found_ents
+        return found_ents[0]
+    """
 
     def load(self,filename):
         """Loads an existing game from a file."""

@@ -1,11 +1,15 @@
-import sys
+import sys, logging
 from mafia_engine.base import GameEngine, GameObject, PhaseGenerator
 #from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
 from mafia_engine.ability.base import AbilityError
 from mafia_engine.ability.simple import *
 
+
+
 default_args = []
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 class TestMod(Moderator):
     """Example moderator."""
@@ -44,9 +48,12 @@ class TestMod(Moderator):
         pass
 
 def main(args):
-    print("Testing components:")
-
     #
+    ge = setup(5,2)
+    menu(ge)
+    return
+
+def setup(n_town, n_mafia):
     ge = GameEngine(
         phases=PhaseGenerator(["day","night"])
         )
@@ -54,9 +61,10 @@ def main(args):
 
     #Add mod object
     mod = TestMod(
-        name="NowanIlfideme",
+        name="Moderator",
         subscriptions=["vote","mkill","phase_change"]
         )
+    ge.entities.append(mod)
 
     #Add town team
     tteam = Alignment(name="Town")
@@ -67,13 +75,13 @@ def main(args):
     ge.entities.append(mteam)
 
     #Add town players
-    for i in range(0,10):
+    for i in range(0,n_town):
         abils = [
-            Vote(name="vote", phase=["day"])
+            Vote(name = "vote", phase = ["day"]),
             ]
         trole = Role(
             name = "townie_role",
-            alignment=tteam,
+            alignment = tteam,
             abilities = abils,
             status = { "alive":True }
             )
@@ -85,15 +93,15 @@ def main(args):
     #
 
     #Add mafia players
-    for i in range(0,3):
+    for i in range(0,n_mafia):
         #TODO: add abilities
         abils = [
-            Vote(name="vote", phase=["day"]),
-            MKill(name="mkill", phase=["night"])
+            Vote(name = "vote", phase = ["day"]),
+            MKill(name = "mkill", phase = ["night"]),
             ]
         mrole = Role(
             name = "mafioso_role",
-            alignment=mteam,
+            alignment = mteam,
             abilities = abils,
             status = { "alive":True }
             )
@@ -103,55 +111,51 @@ def main(args):
             )
         ge.entities.append(mplayer)
     #
+    return ge
 
-    ge
+def menu(ge):
+    """Looped menu."""
+    options = "help ? list action phase quit exit"
+    print(options)
 
-    #Do actions
-    #TODO: Make into loop.
-    ge.entities[3].roles[0].abilities[0].action(
-        actor=ge.entities[3],
-        target=ge.entities[4]
-        )
+    while True:
+        ln = input("> ")
+        if ln.find("list")>=0:
+            print([e.name for e in ge.entity_by_type(Actor)])
+        if ln.find("action")>=0:
+            prompt_action(ge)
+        if ln.find("phase")>=0:
+            ge.next_phase()
+        if ln.find("")>=0:
+            pass
 
-    ge.entities[13].roles[0].abilities[0].action(
-        actor=ge.entities[13],
-        target=ge.entities[7]
-        )
+        if ln.find("quit")>=0 or ln.find("exit")>=0:
+            break
+        if ln.find("help")>=0 or ln.find("?")>=0:
+            print(options)
+    pass
 
-    #Should fail
+def prompt_action(ge):
+    print([e.name for e in ge.entity_by_type(Actor)])
+    
+    i_ent = input("Entity: ")
+    actor = ge.entity_by_name(i_ent)
+    
+    print("Possible actions: " + str(actor.get_ability_names()))
+    i_act = input("Action: ")
+    
+    
+    i_targ = input("Target: ")
+    target = ge.entity_by_name(i_targ)
+
     try:
-        ge.entities[13].roles[0].abilities[1].action(
-            actor=ge.entities[13],
-            target=ge.entities[7]
-            )
+        actor.action(ability=i_act, target=target)
     except AbilityError as e:
         print(e)
         pass
 
-    ge.next_phase()
-
-    ge.entities[13].roles[0].abilities[1].action(
-        actor=ge.entities[13],
-        target=ge.entities[7]
-        )
-
-    #Should fail
-    try:
-        ge.entities[12].roles[0].abilities[0].action(
-            actor=ge.entities[12],
-            target=ge.entities[4]
-            )
-    except AbilityError as e:
-        print(e)
-        pass
-
-    ge
-
-    print("Finished.")
-
-    return
-
-
+        
+    pass
 
 if __name__=="__main__":
     args = sys.argv[1:]

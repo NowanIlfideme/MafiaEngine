@@ -1,4 +1,5 @@
-from .base import Ability, ActivatedAbility, AutomaticAbility
+from .base import *
+from ..entity import *
 
 def DayNightGen(max_days=None):
     i = 0
@@ -63,7 +64,13 @@ class MKill(ActivatedAbility):
         target = kwargs.get("target", None)
         actor = kwargs.get("actor", None)
 
-
+        #Check if target is an Actor
+        #TODO: 
+        if not isinstance(target, Actor):
+            raise AbilityError(self.name + " failed on " + target.name + ": Not an Actor.")
+            pass
+        
+        #TODO: Check if actor is an Actor with the current engine? (Do I even need this?)
 
         pass
     pass
