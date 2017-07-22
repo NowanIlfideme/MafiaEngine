@@ -6,6 +6,6 @@
     "\\src\\mafia_engine",
     "\\src\\mafia_engine\\ability"
   ],
-  "SelectedNode": "\\src\\mafia_engine\\base.py",
+  "SelectedNode": "\\src\\mafia_engine\\ability\\simple.py",
   "PreviewInSolutionExplorer": false
 }

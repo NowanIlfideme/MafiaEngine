@@ -17,6 +17,9 @@ class Ability(GameObject):
 
         pass
 
+    def __repr__(self):
+        return "Ability."+ str(self.name)
+
     pass
 
 class ActivatedAbility(Ability):

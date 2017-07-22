@@ -11,8 +11,8 @@ def DayNightGen(max_days=None):
 
 
 class Vote(ActivatedAbility):
-    """Ability that gets activated by an Entity.
-    This (usually) generates an Action and Event when used."""
+    """Classic vote "ability". Phase restriction set manually.
+    TODO: Implement."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -34,12 +34,18 @@ class Vote(ActivatedAbility):
         """
         super().action(self, *args, **kwargs)
 
+        #Check if target is an Actor, or None
+        if not isinstance(target, Actor):
+            raise AbilityError(self.name + " failed on " + target.name + ": Not an Actor.")
+            pass
+        #TODO: Handle "no vote"/"unvote" case
+
         pass
     pass
 
 class MKill(ActivatedAbility):
-    """Ability that gets activated by an Entity.
-    This (usually) generates an Action and Event when used."""
+    """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
+    TODO: Implement."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -65,12 +71,14 @@ class MKill(ActivatedAbility):
         actor = kwargs.get("actor", None)
 
         #Check if target is an Actor
-        #TODO: 
         if not isinstance(target, Actor):
             raise AbilityError(self.name + " failed on " + target.name + ": Not an Actor.")
             pass
+
+        #TODO: Check if mafiakill has been used already! (via "status" of self.alignment)
         
-        #TODO: Check if actor is an Actor with the current engine? (Do I even need this?)
+        #TODO: Perform the kill!
+
 
         pass
     pass

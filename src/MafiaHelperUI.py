@@ -1,10 +1,10 @@
 import sys, logging
-from mafia_engine.base import GameEngine, GameObject, PhaseGenerator
+from mafia_engine.base import *
 #from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
-from mafia_engine.ability.base import AbilityError
+from mafia_engine.ability.base import *
 from mafia_engine.ability.simple import *
-
+from mafia_engine.trigger import *
 
 
 default_args = []
@@ -48,12 +48,13 @@ class TestMod(Moderator):
         pass
 
 def main(args):
-    #
+    """Console test for the mafia engine."""
     ge = setup(5,2)
     menu(ge)
     return
 
 def setup(n_town, n_mafia):
+    """Sets up a mountainous game with the given params"""
     ge = GameEngine(
         phases=PhaseGenerator(["day","night"])
         )
@@ -87,9 +88,10 @@ def setup(n_town, n_mafia):
             )
         tplayer = Player(
             name = "Townie" + str(i),
-            roles = [trole]
+            roles = [trole],
             )
         ge.entities.append(tplayer)
+        tteam.add(tplayer)
     #
 
     #Add mafia players
@@ -107,10 +109,16 @@ def setup(n_town, n_mafia):
             )
         mplayer = Player(
             name = "Mafioso" + str(i),
-            roles = [mrole]
+            roles = [mrole],
             )
         ge.entities.append(mplayer)
+        mteam.add(mplayer)
     #
+
+    #Add condition checkers
+    #TODO: Switch this with a specialized ConditionChecker that looks if a team is dead!
+    mchecker = ConditionChecker(name="mafia_checker", update_on=["mkill","lynch"], output_event="mafia_loss")
+    tchecker = ConditionChecker(name="town_checker", update_on=["mkill","lynch"], output_event="town_loss")
     return ge
 
 def menu(ge):
@@ -119,20 +127,23 @@ def menu(ge):
     print(options)
 
     while True:
-        ln = input("> ")
-        if ln.find("list")>=0:
-            print([e.name for e in ge.entity_by_type(Actor)])
-        if ln.find("action")>=0:
-            prompt_action(ge)
-        if ln.find("phase")>=0:
-            ge.next_phase()
-        if ln.find("")>=0:
-            pass
+        try:
+            ln = input("> ")
+            if ln.find("list")>=0:
+                print([e.name for e in ge.entity_by_type(Actor)])
+            if ln.find("action")>=0:
+                prompt_action(ge)
+            if ln.find("phase")>=0:
+                ge.next_phase()
+            if ln.find("")>=0:
+                pass
 
-        if ln.find("quit")>=0 or ln.find("exit")>=0:
-            break
-        if ln.find("help")>=0 or ln.find("?")>=0:
-            print(options)
+            if ln.find("quit")>=0 or ln.find("exit")>=0:
+                break
+            if ln.find("help")>=0 or ln.find("?")>=0:
+                print(options)
+        except Exception as e:
+            pass
     pass
 
 def prompt_action(ge):
@@ -152,9 +163,10 @@ def prompt_action(ge):
         actor.action(ability=i_act, target=target)
     except AbilityError as e:
         print(e)
+    except Exception as e:
+        print(e)
         pass
-
-        
+            
     pass
 
 if __name__=="__main__":

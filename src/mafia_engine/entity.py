@@ -1,6 +1,8 @@
 from mafia_engine.base import GameObject
 from mafia_engine.ability.base import *
 
+class EntityError(Exception): """Error with regards to entities."""
+
 class Entity(GameObject):
     """Denotes a game-world entity."""
 
@@ -13,6 +15,9 @@ class Entity(GameObject):
         self.name = kwargs.get("name","")
         
         pass
+
+    def __repr__(self):
+        return "Entity."+ str(self.name)
     pass
 
 class Moderator(Entity):
@@ -30,6 +35,8 @@ class Moderator(Entity):
             pass
 
         pass
+    def __repr__(self):
+        return "Mod."+ str(self.name)
     pass
 
 class Alignment(Entity):
@@ -41,7 +48,22 @@ class Alignment(Entity):
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
+        self.members = []
         pass
+    
+    def __repr__(self):
+        return "Alignment."+ str(self.name)
+
+    def add(self, actor):
+        """Adds $actor to the alignment."""
+        if not isinstance(actor, Actor):
+            raise EntityError("Cannot add " + str(actor) + ", is not an Actor.")
+        self.members.append(actor)
+        if actor.alignment is None:
+            actor.alignment = []
+        actor.alignment.append(self)
+        pass
+
     pass
 
 
@@ -50,13 +72,16 @@ class Actor(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, roles
+        Keys: name, roles (list), alignment (list)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         self.roles = kwargs.get("roles",[])
+        self.alignment = kwargs.get("alignment",[])
 
         pass
+    def __repr__(self):
+        return "Actor."+ str(self.name)
 
     def action(self, *args, **kwargs):
         """
@@ -111,11 +136,13 @@ class Player(Actor):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, roles
+        Keys: name, roles, alignment
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         pass
+    def __repr__(self):
+        return "Player."+ str(self.name)
 
     pass
 
@@ -141,6 +168,9 @@ class Role(GameObject):
         self.status = kwargs.get("status",{})       # name : value
 
         pass
+
+    def __repr__(self):
+        return "Role."+ str(self.name)
 
     def action(self, *args, **kwargs):
         """

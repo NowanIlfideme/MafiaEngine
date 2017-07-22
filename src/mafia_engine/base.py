@@ -8,19 +8,17 @@ def load_from_config(filename):
 class GameObject(object):
     """Defines a game object. This helps in finding the object's environment 
     (i.e. the current game, symbolized by a GameEngine reference).
-    Through that, it can find the EventManager, global logger, etc."""
+    Through that, it can find the EventManager, other GameObjects, etc."""
 
     default_engine = None
 
     def __init__(self, *args, **kwargs):
+        """
+        Keys: engine
+        """
+        self.engine = kwargs.get("engine", self.default_engine)
         
-        try:
-            self.engine = kwargs["engine"]
-        except:
-            self.engine = self.default_engine
         return
-
-
     pass
 
 class HistoryManager(object):
@@ -71,23 +69,24 @@ class EventManager(object):
 
     def signal(self, event, parameters, notes=""): #"bee facts" says: "male bees inherit genes only from their mothers"
         """Notify all subscribers of @event by calling signal(@event, @parameters)."""
-        #TODO: Add history (with notes?)
-        #TODO: Add logging (with notes?)
 
         self.history.signal(event, parameters, notes)
-
+        
         if event in self.listeners:
+            self.logger.debug("Signaling " + str(len(self.listeners[event])) + " with " + str(event) + " : " + str(parameters))
             for l in self.listeners[event]:
                 try:
                     l.signal(event,parameters)
                 except:
-                    #TODO: Handle exception for "function not defined" and such.
-                    pass
+                    self.logger.exception("Could not signal.")
+        else:
+            self.logger.debug("")
         return
 
     pass
 
-def PhaseGenerator(phases=[""]):
+def PhaseGenerator(phases=[None]):
+    """Sequentially generates phases from the given list."""
     while True:
         for x in phases:
             yield x
@@ -109,6 +108,7 @@ class GameEngine(object):
         return
 
     def next_phase(self):
+        """Goes to next phase, and signals a 'phase_change'"""
         old_phase = self.phase
         self.phase = next(self.phases)
         self.event_manager.signal(
@@ -118,6 +118,7 @@ class GameEngine(object):
         pass
 
     def entity_by_lambda(self, lamb):
+        """Gets entities for whom $lamb(e) is True"""
         found_ents = []
         for e in self.entities:
             if lamb(e):
@@ -128,28 +129,14 @@ class GameEngine(object):
 
 
     def entity_by_name(self, name):
+        """Gets entities whose name is $name."""
         return self.entity_by_lambda(lambda e: e.name==name)
-    """
-        found_ents = []
-        for e in self.entities:
-            if e.name==name:
-                found_ents.append(e)
-        if len(found_ents)==0: return None
-        if len(found_ents)>1: return found_ents
-        return found_ents[0]
-    """
+
 
     def entity_by_type(self, type):
+        """Gets entities who are instances of $type."""
         return self.entity_by_lambda(lambda e: isinstance(e, type))
-    """
-        found_ents = []
-        for e in self.entities:
-            if isinstance(e, type):
-                found_ents.append(e)
-        if len(found_ents)==0: return None
-        if len(found_ents)>1: return found_ents
-        return found_ents[0]
-    """
+    
 
     def load(self,filename):
         """Loads an existing game from a file."""
@@ -175,11 +162,7 @@ class GameEngine(object):
         return obj
 
     """
-    TODO: Lots of stuff!
-        phases - how to handle? options:
-            - as a ("day", "night") thing
-            - as a generator (so that non-cyclic things can be used)
-            - ???
+    TODO:
         status - how to control what goes on? hope callers do everything? :D
         ???
 
