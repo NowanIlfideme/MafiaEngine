@@ -28,6 +28,9 @@ class HistoryManager(object):
     TODO: Implement!
     """
 
+    def signal(self, event, parameters, notes=""):
+        """Saves an event to history. TODO: Implement."""
+        pass
 
     pass
 
@@ -51,43 +54,67 @@ class EventManager(object):
 
     def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
         """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
+        if event not in self.listeners:
+            self.listeners[event] = []
         self.listeners[event].append(listener)
+        self.logger.debug("Subscription to: "+str(event)+" by "+str(listener))
         return
 
     def unsubscribe(self, event, listener): #please stop sending me bee facts
         """No longer get signal()'d with regards to @event."""
-        self.listeners[event].remove(listener)
+        if event in self.listeners:
+            self.listeners[event].remove(listener)
+            if len(self.listeners[event])==0:
+                del(self.listeners[event])
+            self.logger.debug("Unsubscription from: "+str(event)+" by "+str(listener))
         return
 
     def signal(self, event, parameters, notes=""): #"bee facts" says: "male bees inherit genes only from their mothers"
         """Notify all subscribers of @event by calling signal(@event, @parameters)."""
         #TODO: Add history (with notes?)
         #TODO: Add logging (with notes?)
-        
-        for l in self.listeners[event]:
-            try:
-                l.signal(event,parameters)
-            except:
-                #TODO: Handle exception for "function not defined" and such.
-                pass
+
+        self.history.signal(event, parameters, notes)
+
+        if event in self.listeners:
+            for l in self.listeners[event]:
+                try:
+                    l.signal(event,parameters)
+                except:
+                    #TODO: Handle exception for "function not defined" and such.
+                    pass
         return
 
     pass
 
+def PhaseGenerator(phases=[""]):
+    while True:
+        for x in phases:
+            yield x
+    pass
 
 class GameEngine(object):
     """Defines a complete Mafia-like game."""
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: entities (list), status (dict), phases (generator/None)
+        Keys: entities (list), status (dict), phases (generator)
         """
         self.event_manager = EventManager()
         self.logger = logging.getLogger(__name__)
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
-        self.phases = kwargs.get("phases",None)
+        self.phases = kwargs.get("phases",PhaseGenerator())
+        self.phase = next(self.phases)
         return
+
+    def next_phase(self):
+        old_phase = self.phase
+        self.phase = next(self.phases)
+        self.event_manager.signal(
+            "phase_change",
+            {"previous_phase":old_phase,"new_phase":self.phase})
+        pass
 
     def load(self,filename):
         """Loads an existing game from a file."""

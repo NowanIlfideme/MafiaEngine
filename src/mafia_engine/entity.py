@@ -14,6 +14,22 @@ class Entity(GameObject):
         pass
     pass
 
+class Moderator(Entity):
+    """Denotes the moderator (usually just a listener)."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, subscriptions ("event")
+        """
+        super().__init__(self, *args, **kwargs)
+        #TODO: Implement
+        
+        for event in kwargs.get("subscriptions",[]):
+            self.engine.event_manager.subscribe(event,self)
+            pass
+
+        pass
+    pass
 
 class Alignment(Entity):
     """Denotes an alignment (team), which might have properties of its own."""
