@@ -75,9 +75,19 @@ class MKill(ActivatedAbility):
             raise AbilityError(self.name + " failed on " + target.name + ": Not an Actor.")
             pass
 
-        #TODO: Check if mafiakill has been used already! (via "status" of self.alignment)
-        
-        #TODO: Perform the kill!
+        #Check if mafiakill has been used already! (via "status" of self.alignment)
+        #TODO: !
+
+        #Check for other circumstances (e.g. protection or immunity)
+
+        #Perform the kill!
+        #TODO: !
+        target.status["dead"] = True
+        self.engine.event_manager.signal("death",
+                                         parameters = {
+                                             "target":target
+                                             }
+                                         )
 
 
         pass

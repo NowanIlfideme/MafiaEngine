@@ -79,6 +79,7 @@ class Actor(Entity):
         self.roles = kwargs.get("roles",[])
         self.alignment = kwargs.get("alignment",[])
 
+        self.status = {}
         pass
     def __repr__(self):
         return "Actor."+ str(self.name)

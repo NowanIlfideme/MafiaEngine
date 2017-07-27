@@ -32,3 +32,52 @@ class ConditionChecker(GameObject):
 
     pass
 
+class AlignmentEliminationChecker(ConditionChecker):
+    """Checks if an Alignment has been eliminated or not."""
+
+    #TODO: IMPLEMENT!
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, update_on, output_event, alignment
+        """
+        
+        # Before the actions are linked, add on "death"
+        if "update_on" in kwargs:
+            kwargs["update_on"].append("death")
+        else:
+            kwargs["update_on"] = ["death"]
+            pass
+
+        super().__init__(self, *args, **kwargs)
+
+        self.alignment = kwargs.get("alignment",None)
+        self.output_event = kwargs.get("output_event","alignment_eliminated") # Overrides super()'s
+
+        self.eliminated = False
+        pass
+
+    def __repr__(self):
+        return "AlignmentEliminationChecker."+ str(self.name)
+
+    def signal(self, event, parameters, notes=""):
+        """Gets called on death and, possibly, other events.
+        Checks whether the alignment has members left."""
+        
+        if self.eliminated: return
+
+        if len(self.alignment.members)==0:
+            pass
+        else:
+            for member in self.alignment.members:
+                if not member.status.get("dead",False):
+                    #self.eliminated = False #Don't even have to set it.
+                    return
+        self.eliminated = True
+        self.engine.event_manager.signal(
+            self.output_event,
+            {"alignment":self.alignment}
+            )
+
+
+    pass

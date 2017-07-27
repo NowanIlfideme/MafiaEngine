@@ -18,38 +18,41 @@ class TestMod(Moderator):
         pass
 
     def signal(self, event, parameters):
-        if event=="":
-            pass
-        if event=="vote":
-            if "actor" in parameters:
-                actor = parameters["actor"].name
-            else: actor = "<unknown>"
-            if "target" in parameters:
-                target = parameters["target"].name
-            else: target = "<unknown>"
-            print(actor + " voted for " + target + "!")
-            pass
 
-        if event=="mkill":
-            if "actor" in parameters:
-                actor = parameters["actor"].name
-            else: actor = "<unknown>"
-            if "target" in parameters:
-                target = parameters["target"].name
-            else: target = "<unknown>"
-            print(actor + " mkilled " + target + "!")
-            pass
+        #Get info
+        prefix = "-> "
 
-        if event=="phase_change":
-            print("Phase changed, now: "+self.engine.phase)
-            pass
+        if "target" in parameters:
+            target = parameters["target"].name
+        else: target = "<unknown>"
+
+        if "actor" in parameters:
+            actor = parameters["actor"].name
+        else: actor = "<unknown>"
+
+        if "alignment" in parameters:
+            alignment = parameters["alignment"].name
+        else: alignment = "<unknown>"            
+
+        #Get message
+
+        if event=="": pass
+        if event=="vote": print(prefix + actor + " voted for " + target + "!")
+
+        if event=="mkill": print(prefix + actor + " mkilled " + target + "!")
+
+        if event=="phase_change": print(prefix + "Phase changed, now: " + self.engine.phase)
+
+        if event=="death": print(prefix + target + " died!")
+
+        if event=="alignment_eliminated": print(prefix + alignment + " was eliminated!")
 
 
         pass
 
 def main(args):
     """Console test for the mafia engine."""
-    ge = setup(5,2)
+    ge = setup(2,1)
     menu(ge)
     return
 
@@ -63,7 +66,10 @@ def setup(n_town, n_mafia):
     #Add mod object
     mod = TestMod(
         name="Moderator",
-        subscriptions=["vote","mkill","phase_change"]
+        subscriptions=["vote","mkill",
+                       "phase_change",
+                       "death",
+                       "alignment_eliminated"]
         )
     ge.entities.append(mod)
 
@@ -117,8 +123,8 @@ def setup(n_town, n_mafia):
 
     #Add condition checkers
     #TODO: Switch this with a specialized ConditionChecker that looks if a team is dead!
-    mchecker = ConditionChecker(name="mafia_checker", update_on=["mkill","lynch"], output_event="mafia_loss")
-    tchecker = ConditionChecker(name="town_checker", update_on=["mkill","lynch"], output_event="town_loss")
+    mchecker = AlignmentEliminationChecker(name="mafia_checker", alignment=mteam)
+    tchecker = AlignmentEliminationChecker(name="town_checker", alignment=tteam)
     return ge
 
 def menu(ge):
