@@ -7,14 +7,21 @@ from mafia_engine.ability.simple import *
 from mafia_engine.trigger import *
 
 
-default_args = []
+default_args = [] #[2, 1]
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG) #INFO
+logging.basicConfig(level=logging.INFO) #DEBUG
 
 
-def main(args):
+def main(*args):
     """Console test for the mafia engine."""
-    ge = setup(2,1)
+
+    if len(args)==0:
+        n_town = int(input("Number of town: "))
+        n_mafia = int(input("Number of mafia: "))
+    else:
+        n_town = args[0]
+        n_mafia = args[1]
+    ge = setup(n_town, n_mafia)
     menu(ge)
     return
 
@@ -132,10 +139,15 @@ def prompt_action(ge):
         actor = ge.entity_by_name(i_ent)
     
         abil_names = actor.get_ability_names()
-        print("Possible actions: " + str(abil_names))
-        i_act = input("Action (name or index): ")
-        try: i_act = abil_names[int(i_act)]
-        except: pass
+        if len(abil_names)==1:
+            i_act = abil_names[0]
+            print("Action: " + str(i_act) + " (only possible one).")
+        else:
+            print("Possible actions: " + str(abil_names))
+            i_act = input("Action (name or index): ")
+            try: i_act = abil_names[int(i_act)]
+            except: pass
+            pass
     
         i_targ = input("Target (name or index): ")
         try: i_targ = names[int(i_targ)]
@@ -156,7 +168,7 @@ def prompt_action(ge):
 
 if __name__=="__main__":
     args = sys.argv[1:]
-    if (len(args)>0): main(args)
-    else: main(default_args)
+    if (len(args)>0): main(*args)
+    else: main(*default_args)
 else:
     pass
