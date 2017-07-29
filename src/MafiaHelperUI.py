@@ -39,16 +39,24 @@ class TestMod(Moderator):
         #Get message
 
         if event=="": pass
+
         if event=="vote":
             print(prefix + actor + " voted for " + target + "!")
             #TODO: Add voting checks!
 
+            pass
+
         if event=="mkill": print(prefix + actor + " mkilled " + target + "!")
 
-        if event=="phase_change": print(prefix + "Phase changed, now: " + self.engine.phase)
+        if event=="phase_change": 
+            print(prefix + "Phase changed, now: " + self.engine.phase)
+            #TODO: Reset votes!
+
+            pass
 
         if event=="death":
             print(prefix + target + " died!")
+            pass
 
         if event=="alignment_eliminated":
             print(prefix + alignment + " was eliminated!")
@@ -57,6 +65,7 @@ class TestMod(Moderator):
             tmp.remove(parameters["alignment"])
             print(prefix + tmp[0].name + " has won!")
             self.engine.status["finished"]=True
+            pass
 
         pass
 
@@ -91,7 +100,7 @@ def setup(n_town, n_mafia):
     ge.entities.append(tteam)
 
     #Add mafia team
-    mteam = Alignment(name="Mafia")
+    mteam = MafiaAlignment(name="Mafia")
     ge.entities.append(mteam)
 
     #Add town players

@@ -8,7 +8,7 @@ class Entity(GameObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list)
+        Keys: name, subscriptions (list), status (dict)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
@@ -16,6 +16,7 @@ class Entity(GameObject):
         for event in kwargs.get("subscriptions",[]):
             self.subscribe(event)
             pass
+        self.status = kwargs.get("status",{})
         pass
 
     def __repr__(self):
@@ -28,7 +29,7 @@ class Moderator(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list)
+        Keys: name, subscriptions (list), status (dict)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
@@ -46,7 +47,7 @@ class Alignment(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list)
+        Keys: name, subscriptions (list), status (dict)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
@@ -74,7 +75,7 @@ class Actor(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list), roles (list), alignment (list)
+        Keys: name, subscriptions (list), roles (list)
         """
         #Pre-processing
         if "subscriptions" in kwargs:
@@ -86,11 +87,30 @@ class Actor(Entity):
         
         #TODO: Implement
         self.roles = kwargs.get("roles",[])
-        self.alignment = kwargs.get("alignment",[])
-
+        #self.__alignment = []
         self.status = {}
         
         pass
+
+    @property
+    def alignment(self):
+        #TODO: return alignments from roles
+        try: r_aligns = [R.alignment for R in self.roles]
+        except: r_aligns = []
+        try: s_aligns = self.__alignment
+        except: s_aligns = []
+        aligns = s_aligns.copy()
+        aligns.extend(r_aligns)
+        res = set(aligns)
+        
+        #if len(res)==0: return None
+        #if len(res)==1: return res.pop()
+        return list(res)
+
+    @alignment.setter
+    def alignment(self, val):
+        res = set(val) - set([R.alignment for R in self.roles])
+        self.__alignment = list(res)
 
     def __repr__(self):
         return "Actor."+ str(self.name)
@@ -190,7 +210,7 @@ class Role(GameObject):
         super().__init__(self, *args, **kwargs)
         #TODO Add local members.
         self.name = kwargs.get("name","")
-        self.aligment = kwargs.get("alignment",None)
+        self.alignment = kwargs.get("alignment",None)
         self.abilities = kwargs.get("abilities",[]) # [Ability]
         self.status = kwargs.get("status",{})       # name : value
 

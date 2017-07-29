@@ -11,7 +11,7 @@ The initial game engine is being built, along with a minimal set of abilities
 (later on, a large set of stock abilities will be available). Currently, the
 example game runs approximately like this:
 
-![Example Mafia Game](/documentation/ExampleMafiaGame.png)
+![Example Mafia Game](documentation/ExampleMafiaGame.PNG)
 
 and everything about the game is hard-coded (no config yet).
 

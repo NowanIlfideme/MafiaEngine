@@ -75,15 +75,21 @@ class MKill(ActivatedAbility):
         #Check if target is an Actor
         if not isinstance(target, Actor):
             raise AbilityError(self.name + " failed on " + target.name + ": Not an Actor.")
-            pass
+
 
         #Check if mafiakill has been used already! (via "status" of self.alignment)
-        #TODO: !
+        mkill_used = False
+        if actor.alignment[0].status.get("mkill_used", False): 
+            mkill_used = True
+
+        if mkill_used:
+            raise AbilityError(self.name + " failed: already used!")
 
         #Check for other circumstances (e.g. protection or immunity)
 
+
         #Perform the kill!
-        #TODO: !
+        actor.alignment[0].status["mkill_used"] = True
         target.status["dead"] = True
         self.send_signal("death", parameters = { "target":target } )
 
@@ -91,3 +97,30 @@ class MKill(ActivatedAbility):
         pass
     pass
 
+class MafiaAlignment(Alignment):
+    """Denotes the mafia team."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, subscriptions (list), status (dict)
+        """
+
+        if "subscriptions" in kwargs:
+            if "phase_change" not in kwargs["subscriptions"]:
+                kwargs["subscriptions"].append("phase_change")
+        else: kwargs["subscriptions"] = ["phase_change"]
+
+        super().__init__(self, *args, **kwargs)
+        #TODO: Implement
+        pass
+    
+    def signal(self, event, parameters, notes=""):
+        super().signal(event, parameters, notes)
+
+        if event=="phase_change":
+            self.status["mkill_used"] = False
+            pass
+
+        pass
+
+    pass
