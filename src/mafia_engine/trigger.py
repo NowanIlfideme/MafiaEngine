@@ -19,7 +19,7 @@ class ConditionChecker(GameObject):
         self.update_on = kwargs.get("update_on",[])
 
         for e in self.update_on:
-            self.engine.event_manager.subscribe(e,self)
+            self.subscribe(e)
 
         pass
 
@@ -74,10 +74,7 @@ class AlignmentEliminationChecker(ConditionChecker):
                     #self.eliminated = False #Don't even have to set it.
                     return
         self.eliminated = True
-        self.engine.event_manager.signal(
-            self.output_event,
-            {"alignment":self.alignment}
-            )
+        self.send_signal(self.output_event, { "alignment":self.alignment } )
 
 
     pass

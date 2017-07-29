@@ -8,43 +8,45 @@ class Entity(GameObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name
+        Keys: name, subscriptions (list)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         self.name = kwargs.get("name","")
-        
+        for event in kwargs.get("subscriptions",[]):
+            self.subscribe(event)
+            pass
         pass
 
     def __repr__(self):
         return "Entity."+ str(self.name)
     pass
 
+
 class Moderator(Entity):
     """Denotes the moderator (usually just a listener)."""
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions ("event")
+        Keys: name, subscriptions (list)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         
-        for event in kwargs.get("subscriptions",[]):
-            self.engine.event_manager.subscribe(event,self)
-            pass
+        
 
         pass
     def __repr__(self):
         return "Mod."+ str(self.name)
     pass
 
+
 class Alignment(Entity):
     """Denotes an alignment (team), which might have properties of its own."""
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name
+        Keys: name, subscriptions (list)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
@@ -72,21 +74,42 @@ class Actor(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, roles (list), alignment (list)
+        Keys: name, subscriptions (list), roles (list), alignment (list)
         """
+        #Pre-processing
+        if "subscriptions" in kwargs:
+            if "death" in kwargs["subscriptions"]:
+                kwargs["subscriptions"].append("death")
+        else: kwargs["subscriptions"] = ["death"]
+        
         super().__init__(self, *args, **kwargs)
+        
         #TODO: Implement
         self.roles = kwargs.get("roles",[])
         self.alignment = kwargs.get("alignment",[])
 
         self.status = {}
+        
         pass
+
     def __repr__(self):
         return "Actor."+ str(self.name)
 
+    def signal(self, event, parameters, notes=""):
+        """Gets called on death and, possibly, other events."""
+
+        #TODO: Handle death gracefully by... removing ones self from the game.
+        #(as basic behavior - can be overridden, I guess)
+        if event=="death":
+            if parameters["target"]==self:
+                if self in self.engine.entities:
+                    self.engine.entities.remove(self)
+
+        pass
+
     def action(self, *args, **kwargs):
-        """
-        Key: ability, target
+        """Performs an action, specified by the name
+        Key: ability, <ability args>
         """
 
         actor = self
@@ -111,9 +134,10 @@ class Actor(Entity):
             raise AbilityError("Could not determine ability \
             exactly. Found roles: " + str(found_roles))
 
-        target = kwargs.get("target","")
-
-        found_roles[0].action(ability=ability, actor=actor, target=target)
+        kwargs["ability"]=ability
+        #Below are things the "role" figures out by itself
+        #target = kwargs.get("target","")
+        found_roles[0].action(actor=actor, **kwargs)
         pass
 
     def get_abilities(self):
@@ -132,16 +156,18 @@ class Actor(Entity):
         return q[0], q[1]
     pass
 
+
 class Player(Actor):
-    """Denotes an player entity (i.e. an actual, human player)."""
+    """Denotes an player actor (i.e. an actual, human player)."""
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, roles, alignment
+        Keys: name, subscriptions, roles, alignment
         """
         super().__init__(self, *args, **kwargs)
-        #TODO: Implement
+        #TODO: Implement player-specific stuff
         pass
+
     def __repr__(self):
         return "Player."+ str(self.name)
 

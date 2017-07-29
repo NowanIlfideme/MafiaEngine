@@ -61,11 +61,11 @@ class ActivatedAbility(Ability):
         target = kwargs.get("target", None)
         actor = kwargs.get("actor", None)
 
-        self.engine.event_manager.signal(self.name,
-                                         parameters = {
-                                             "actor":actor,
-                                             "target":target}
-                                         )
+        self.send_signal(self.name,
+                         parameters = {
+                             "actor":actor,
+                             "target":target}
+                         )
         pass
     pass
 

@@ -83,11 +83,7 @@ class MKill(ActivatedAbility):
         #Perform the kill!
         #TODO: !
         target.status["dead"] = True
-        self.engine.event_manager.signal("death",
-                                         parameters = {
-                                             "target":target
-                                             }
-                                         )
+        self.send_signal("death", parameters = { "target":target } )
 
 
         pass

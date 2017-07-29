@@ -19,6 +19,26 @@ class GameObject(object):
         self.engine = kwargs.get("engine", self.default_engine)
         
         return
+
+    def signal(self, event, parameters, notes=""):
+        """Signals $self that $event happened.
+        Override this."""
+        pass
+
+    def send_signal(self, event, parameters, notes=""):
+        """Signal the event manager that $event happened."""
+        self.engine.event_manager.signal(event,parameters=parameters,notes=notes)
+
+    def subscribe(self, event):
+        """Subscribe $self (as listener) to $event."""
+        self.engine.event_manager.subscribe(event,self)
+        pass
+
+    def unsubscribe(self, event):
+        """Unsubscribe $self (as listener) from $event."""
+        self.engine.event_manager.unsubscribe(event,self)
+        pass
+
     pass
 
 class HistoryManager(object):
@@ -97,45 +117,59 @@ class GameEngine(object):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: entities (list), status (dict), phases (generator)
+        Keys: entities (list), status (dict), phase_gen (generator)
         """
         self.event_manager = EventManager()
         self.logger = logging.getLogger(__name__)
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
-        self.phases = kwargs.get("phases",PhaseGenerator())
-        self.phase = None # next(self.phases) - None means game not started yet!
+        self.phase_gen = kwargs.get("phase_gen",PhaseGenerator())
+        #self.phase = None # next(self.phases) - None means game not started yet!
+        
         return
+
+    @property
+    def phase(self):
+        return self.status["phase"]
+
+    @phase.setter
+    def phase(self, q):
+        self.status["phase"] = q
+        pass
 
     def next_phase(self):
         """Goes to next phase, and signals a 'phase_change'"""
         old_phase = self.phase
-        self.phase = next(self.phases)
+        self.phase = next(self.phase_gen)
         self.event_manager.signal(
             "phase_change",
             {"previous_phase":old_phase,"new_phase":self.phase}
             )
         pass
 
-    def entity_by_lambda(self, lamb):
+    def entity_by_lambda(self, lamb, always_list=False):
         """Gets entities for whom $lamb(e) is True"""
         found_ents = []
         for e in self.entities:
             if lamb(e):
                 found_ents.append(e)
+        if always_list or len(found_ents)>1: return found_ents
         if len(found_ents)==0: return None
-        if len(found_ents)>1: return found_ents
-        return found_ents[0]
+        return found_ents[0] #len==1
 
 
-    def entity_by_name(self, name):
+    def entity_by_name(self, name, always_list=False):
         """Gets entities whose name is $name."""
-        return self.entity_by_lambda(lambda e: e.name==name)
+        return self.entity_by_lambda(
+            lambda e: e.name==name, 
+            always_list)
 
 
-    def entity_by_type(self, type):
+    def entity_by_type(self, type, always_list=False):
         """Gets entities who are instances of $type."""
-        return self.entity_by_lambda(lambda e: isinstance(e, type))
+        return self.entity_by_lambda(
+            lambda e: isinstance(e, type),
+           always_list)
     
 
     def load(self,filename):
@@ -168,3 +202,5 @@ class GameEngine(object):
 
     """
     pass
+
+

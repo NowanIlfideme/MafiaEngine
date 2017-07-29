@@ -9,7 +9,8 @@ from mafia_engine.trigger import *
 
 default_args = []
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO) #DEBUG
+
 
 class TestMod(Moderator):
     """Example moderator."""
@@ -23,7 +24,8 @@ class TestMod(Moderator):
         prefix = "-> "
 
         if "target" in parameters:
-            target = parameters["target"].name
+            real_target = parameters["target"]
+            target = real_target.name
         else: target = "<unknown>"
 
         if "actor" in parameters:
@@ -37,16 +39,24 @@ class TestMod(Moderator):
         #Get message
 
         if event=="": pass
-        if event=="vote": print(prefix + actor + " voted for " + target + "!")
+        if event=="vote":
+            print(prefix + actor + " voted for " + target + "!")
+            #TODO: Add voting checks!
 
         if event=="mkill": print(prefix + actor + " mkilled " + target + "!")
 
         if event=="phase_change": print(prefix + "Phase changed, now: " + self.engine.phase)
 
-        if event=="death": print(prefix + target + " died!")
+        if event=="death":
+            print(prefix + target + " died!")
 
-        if event=="alignment_eliminated": print(prefix + alignment + " was eliminated!")
-
+        if event=="alignment_eliminated":
+            print(prefix + alignment + " was eliminated!")
+            #TODO: Game-end behavior, for the simple game!
+            tmp = self.engine.entity_by_type(Alignment,True)
+            tmp.remove(parameters["alignment"])
+            print(prefix + tmp[0].name + " has won!")
+            self.engine.status["finished"]=True
 
         pass
 
@@ -59,7 +69,10 @@ def main(args):
 def setup(n_town, n_mafia):
     """Sets up a mountainous game with the given params"""
     ge = GameEngine(
-        phases=PhaseGenerator(["day","night"])
+        phase_gen = PhaseGenerator(["day","night"]),
+        status = {
+            "phase":None
+            }
         )
     GameObject.default_engine = ge
 
@@ -122,7 +135,6 @@ def setup(n_town, n_mafia):
     #
 
     #Add condition checkers
-    #TODO: Switch this with a specialized ConditionChecker that looks if a team is dead!
     mchecker = AlignmentEliminationChecker(name="mafia_checker", alignment=mteam)
     tchecker = AlignmentEliminationChecker(name="town_checker", alignment=tteam)
     return ge
@@ -136,7 +148,8 @@ def menu(ge):
         try:
             ln = input("> ")
             if ln.find("list")>=0:
-                print([e.name for e in ge.entity_by_type(Actor)])
+                print("Phase: " + str(ge.phase))
+                print([e.name for e in ge.entity_by_type(Actor,True)])
             if ln.find("action")>=0:
                 prompt_action(ge)
             if ln.find("phase")>=0:
@@ -148,21 +161,32 @@ def menu(ge):
                 break
             if ln.find("help")>=0 or ln.find("?")>=0:
                 print(options)
+
+            #Check for game end
+            if ge.status.get("finished",False):
+                break
         except Exception as e:
+            print(e)
             pass
     pass
 
 def prompt_action(ge):
-    print([e.name for e in ge.entity_by_type(Actor)])
-    
-    i_ent = input("Entity: ")
+    names = [e.name for e in ge.entity_by_type(Actor,True)]
+    print(names)
+    i_ent = input("Entity (name or index): ")
+    try: i_ent = names[int(i_ent)]
+    except: pass
     actor = ge.entity_by_name(i_ent)
     
-    print("Possible actions: " + str(actor.get_ability_names()))
-    i_act = input("Action: ")
+    abil_names = actor.get_ability_names()
+    print("Possible actions: " + str(abil_names))
+    i_act = input("Action (name or index): ")
+    try: i_act = abil_names[int(i_act)]
+    except: pass
     
-    
-    i_targ = input("Target: ")
+    i_targ = input("Target (name or index): ")
+    try: i_targ = names[int(i_targ)]
+    except: pass
     target = ge.entity_by_name(i_targ)
 
     try:
