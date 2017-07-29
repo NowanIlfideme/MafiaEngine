@@ -100,7 +100,7 @@ class EventManager(object):
                 except:
                     self.logger.exception("Could not signal.")
         else:
-            self.logger.debug("")
+            self.logger.debug("Event "+str(event)+" happened, but 0 listeners.")
         return
 
     pass

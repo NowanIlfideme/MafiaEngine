@@ -12,63 +12,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG) #INFO
 
 
-class TestMod(Moderator):
-    """Example moderator."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-        pass
-
-    def signal(self, event, parameters):
-
-        #Get info
-        prefix = "-> "
-
-        if "target" in parameters:
-            real_target = parameters["target"]
-            target = real_target.name
-        else: target = "<unknown>"
-
-        if "actor" in parameters:
-            actor = parameters["actor"].name
-        else: actor = "<unknown>"
-
-        if "alignment" in parameters:
-            alignment = parameters["alignment"].name
-        else: alignment = "<unknown>"            
-
-        #Get message
-
-        if event=="": pass
-
-        if event=="vote":
-            print(prefix + actor + " voted for " + target + "!")
-            #TODO: Add voting checks!
-
-            pass
-
-        if event=="mkill": print(prefix + actor + " mkilled " + target + "!")
-
-        if event=="phase_change": 
-            print(prefix + "Phase changed, now: " + self.engine.phase)
-            #TODO: Reset votes!
-
-            pass
-
-        if event=="death":
-            print(prefix + target + " died!")
-            pass
-
-        if event=="alignment_eliminated":
-            print(prefix + alignment + " was eliminated!")
-            #TODO: Game-end behavior, for the simple game!
-            tmp = self.engine.entity_by_type(Alignment,True)
-            tmp.remove(parameters["alignment"])
-            print(prefix + tmp[0].name + " has won!")
-            self.engine.status["finished"]=True
-            pass
-
-        pass
-
 def main(args):
     """Console test for the mafia engine."""
     ge = setup(2,1)
@@ -197,7 +140,11 @@ def prompt_action(ge):
         i_targ = input("Target (name or index): ")
         try: i_targ = names[int(i_targ)]
         except: pass
-        target = ge.entity_by_name(i_targ)
+        
+        if i_targ=="None": 
+            target = None
+        else: 
+            target = ge.entity_by_name(i_targ)
 
         try:
             actor.action(ability=i_act, target=target)
