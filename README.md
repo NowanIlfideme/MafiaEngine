@@ -5,6 +5,17 @@ Engine for Mafia-like games. Unsurprising, right?
 This project is currently under construction.
 
 
+## Current Development
+
+The initial game engine is being built, along with a minimal set of abilities 
+(later on, a large set of stock abilities will be available). Currently, the
+example game runs approximately like this:
+
+![Example Mafia Game](/documentation/ExampleMafiaGame.png)
+
+and everything about the game is hard-coded (no config yet).
+
+
 ## Motivation
 
 Running a Mafia game, either in real life (IRL) or on a forum, takes a bit

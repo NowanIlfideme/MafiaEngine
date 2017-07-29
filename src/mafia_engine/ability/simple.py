@@ -1,12 +1,14 @@
 from .base import *
 from ..entity import *
 
+#Not actually used, but w/e?
 def DayNightGen(max_days=None):
     i = 0
     while (max_days==None or i<max_days):
         i += 1
         if i%2==0: yield "day"
         else: yield "night"
+    yield None
     pass
 
 

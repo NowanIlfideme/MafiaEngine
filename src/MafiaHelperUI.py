@@ -9,7 +9,7 @@ from mafia_engine.trigger import *
 
 default_args = []
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO) #DEBUG
+logging.basicConfig(level=logging.DEBUG) #INFO
 
 
 class TestMod(Moderator):
@@ -173,31 +173,30 @@ def menu(ge):
 def prompt_action(ge):
     names = [e.name for e in ge.entity_by_type(Actor,True)]
     print(names)
-    i_ent = input("Entity (name or index): ")
-    try: i_ent = names[int(i_ent)]
-    except: pass
-    actor = ge.entity_by_name(i_ent)
-    
-    abil_names = actor.get_ability_names()
-    print("Possible actions: " + str(abil_names))
-    i_act = input("Action (name or index): ")
-    try: i_act = abil_names[int(i_act)]
-    except: pass
-    
-    i_targ = input("Target (name or index): ")
-    try: i_targ = names[int(i_targ)]
-    except: pass
-    target = ge.entity_by_name(i_targ)
-
     try:
-        actor.action(ability=i_act, target=target)
-    except AbilityError as e:
-        print(e)
+        i_ent = input("Entity (name or index): ")
+        try: i_ent = names[int(i_ent)]
+        except: pass
+        actor = ge.entity_by_name(i_ent)
+    
+        abil_names = actor.get_ability_names()
+        print("Possible actions: " + str(abil_names))
+        i_act = input("Action (name or index): ")
+        try: i_act = abil_names[int(i_act)]
+        except: pass
+    
+        i_targ = input("Target (name or index): ")
+        try: i_targ = names[int(i_targ)]
+        except: pass
+        target = ge.entity_by_name(i_targ)
+
+        try:
+            actor.action(ability=i_act, target=target)
+        except AbilityError as e:
+            print("Error with ability: " + str(e))
     except Exception as e:
-        print(e)
-        pass
-            
-    pass
+        print("Error while parsing ability: " + str(e))
+    return
 
 if __name__=="__main__":
     args = sys.argv[1:]
