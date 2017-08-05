@@ -1,20 +1,55 @@
-import sys, logging
+import sys, os, logging
 from mafia_engine.base import *
 #from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
 from mafia_engine.ability.base import *
 from mafia_engine.ability.simple import *
 from mafia_engine.trigger import *
+from mafia_engine.config import *
 
+import yaml
 
 default_args = [] #[2, 1]
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO) #DEBUG
+logging.basicConfig(level=logging.DEBUG) #INFO
 
+
+q = """
+import sys, os, yaml, logging
+os.chdir("C:\\Users\\Anato\\MafiaEngine\\src")
+from mafia_engine import *
+import mafia_engine as ME
+ge = ME.base.GameEngine(
+    phase_iter = ME.base.PhaseIterator(phases=["Day,Night"])
+    )
+q = yaml.dump(ge)
+print(q)
+# """
+
+def testyaml():
+    res = "<failed>"
+    with open("../resource/mountainous.yaml", 'r') as stream:
+        try:
+            res = yaml.load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+        pass
+    print(res)
+    pass
+
+def dump_engine(ge, fname):
+    #for ent in ge.entities:
+    #    print(yaml.dump(ent))
+    ffname = os.path.realpath(fname)
+    with open(ffname, 'w') as stream:
+        yaml.dump(ge, stream)
+        print("Dumped to {}".format(ffname))
+    return
 
 def main(*args):
     """Console test for the mafia engine."""
 
+    testyaml()
     if len(args)==0:
         n_town = int(input("Number of town: "))
         n_mafia = int(input("Number of mafia: "))
@@ -23,12 +58,16 @@ def main(*args):
         n_mafia = args[1]
     ge = setup(n_town, n_mafia)
     menu(ge)
+
+    #dump
+    fname="../resource/save_stage.yaml"
+    dump_engine(ge,fname)
     return
 
 def setup(n_town, n_mafia):
     """Sets up a mountainous game with the given params"""
     ge = GameEngine(
-        phase_gen = PhaseGenerator(["day","night"]),
+        phase_iter = PhaseIterator(phases = ["day","night"]),
         status = {
             "phase":None
             }

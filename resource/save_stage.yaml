@@ -1,0 +1,123 @@
+&id001 !GameEngine
+entities:
+- &id006 !!python/object:mafia_engine.ability.simple.TestMod
+  _subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
+  engine: *id001
+  name: Moderator
+  status: {}
+  vote_tally: &id008 !!python/object:mafia_engine.ability.simple.VoteTally
+    engine: *id001
+    voted: {}
+    votes: {}
+- &id002 !Alignment
+  _subscriptions: []
+  engine: *id001
+  members:
+  - &id004 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie0
+    roles:
+    - !Role
+      abilities:
+      - !!python/object:mafia_engine.ability.simple.Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
+  - &id005 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie1
+    roles:
+    - !Role
+      abilities:
+      - !!python/object:mafia_engine.ability.simple.Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
+  name: Town
+  status: {}
+- &id003 !!python/object:mafia_engine.ability.simple.MafiaAlignment
+  _subscriptions: [phase_change]
+  engine: *id001
+  members:
+  - &id007 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Mafioso0
+    roles:
+    - !Role
+      abilities:
+      - !!python/object:mafia_engine.ability.simple.Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      - !!python/object:mafia_engine.ability.simple.MKill
+        engine: *id001
+        name: mkill
+        phase: [night]
+        total_uses: null
+        uses: null
+      alignment: *id003
+      engine: *id001
+      name: mafioso_role
+      status: {alive: true}
+    status: {dead: true}
+  name: Mafia
+  status: {mkill_used: true}
+- *id004
+- *id005
+event_manager: !EventManager
+  history: !HistoryManager {}
+  listeners:
+    alignment_eliminated:
+    - *id006
+    death:
+    - *id006
+    - *id004
+    - *id005
+    - *id007
+    - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
+      alignment: *id003
+      eliminated: true
+      engine: *id001
+      name: mafia_checker
+      output_event: alignment_eliminated
+      update_on: [death]
+    - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
+      alignment: *id002
+      eliminated: false
+      engine: *id001
+      name: town_checker
+      output_event: alignment_eliminated
+      update_on: [death]
+    mkill:
+    - *id006
+    phase_change:
+    - *id006
+    - *id008
+    - *id003
+    vote:
+    - *id006
+phase_iter: !<PhaseIterator>
+  current: 2
+  engine: null
+  phases: [day, night]
+  repeat: true
+status: {finished: true, phase: night}

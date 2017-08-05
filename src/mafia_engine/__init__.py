@@ -1,2 +1,2 @@
 
-__all__ = ["base","entity","ability","trigger"]
+__all__ = ["base","entity","ability","trigger","config"]

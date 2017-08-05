@@ -1,15 +1,37 @@
 import yaml, logging
+from copy import deepcopy, copy
 
 def load_from_config(filename):
     """Reads and loads from a YAML config file."""
     #TODO: Add YAML-based config.
     pass
 
-class GameObject(object):
+class SecretYamlObject(yaml.YAMLObject):
+    """Helper class for YAML serialization.
+    Source: https://stackoverflow.com/questions/22773612/how-can-i-ignore-a-member-when-serializing-an-object-with-pyyaml """
+
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        pass
+
+    hidden_fields = []
+    @classmethod
+    def to_yaml(cls,dumper,data):
+        new_data = copy(data)
+        for item in cls.hidden_fields:
+            if item in new_data.__dict__:
+               del new_data.__dict__[item]
+        res = dumper.represent_yaml_object(cls.yaml_tag, new_data, cls, flow_style=cls.yaml_flow_style)
+        return res
+    pass
+
+class GameObject(SecretYamlObject):
     """Defines a game object. This helps in finding the object's environment 
     (i.e. the current game, symbolized by a GameEngine reference).
     Through that, it can find the EventManager, other GameObjects, etc."""
 
+    yaml_tag = u"!GameObject"
+    #hidden_fields = []
     default_engine = None
 
     def __init__(self, *args, **kwargs):
@@ -19,6 +41,13 @@ class GameObject(object):
         self.engine = kwargs.get("engine", self.default_engine)
         
         return
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "engine=%r" % self.engine
+        
+        res += ")" 
+        return res
 
     def signal(self, event, parameters, notes=""):
         """Signals $self that $event happened.
@@ -41,10 +70,27 @@ class GameObject(object):
 
     pass
 
-class HistoryManager(object):
+class HistoryManager(SecretYamlObject):
     """Saves all events in chronological and searchable order.
     TODO: Implement!
     """
+
+    yaml_tag = u"!HistoryManager"
+    #hidden_fields = []
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: <none>
+        """
+        pass
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += ")"
+        return res
+
+    def __str__(self):
+        return "HistoryManager"
 
     def signal(self, event, parameters, notes=""):
         """Saves an event to history. TODO: Implement."""
@@ -52,7 +98,7 @@ class HistoryManager(object):
 
     pass
 
-class EventManager(object):
+class EventManager(SecretYamlObject):
     """Manager for in-game events. Works as follows:
     Listeners subscribe to Events.
     Whenever someone wants to raise an event, they Signal it, and all listeners 
@@ -60,6 +106,9 @@ class EventManager(object):
     Events get logged AND saved in the history.
     History allows one to resume a game from a particular state.
     """
+
+    yaml_tag = u"!EventManager"
+    hidden_fields = ["logger"]
 
     def __init__(self, *args, **kwargs):
         """
@@ -69,6 +118,29 @@ class EventManager(object):
         self.logger = logging.getLogger(__name__)  #normal Python logger
         self.history = HistoryManager()
         return
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "listeners=%r, " % self.listeners
+        res += "history=%r" % self.history
+        res += ")" 
+        return res
+
+    def yaml(self):
+        dct = self.__dict__
+        if "loggr" in dct:
+            del(dct["logger"])
+        return yaml.dump(dct)
+ 
+    @staticmethod
+    def load(data):
+        vals = yaml.safe_load(data)
+        return EventManager(
+            listeners = vals["listeners"],
+            history = vals["history"],
+            phase_iter = vals["phase_iter"]
+            )
+
 
     def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
         """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
@@ -105,28 +177,88 @@ class EventManager(object):
 
     pass
 
-def PhaseGenerator(phases=[None]):
-    """Sequentially generates phases from the given list."""
-    while True:
-        for x in phases:
-            yield x
-    pass
 
-class GameEngine(object):
-    """Defines a complete Mafia-like game."""
+class PhaseIterator(GameObject):
+    """Iterates over the phases."""
+
+    yaml_tag = u"PhaseIterator"
+    #hidden_fields = []
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: entities (list), status (dict), phase_gen (generator)
+        Keys: name, phases, repeat
         """
-        self.event_manager = EventManager()
+        super().__init__(self, *args, **kwargs)
+        self.phases = kwargs.get("phases",[])
+        self.repeat = kwargs.get("repeat",True)
+        self.current = 0
+        pass
+
+    def __iter__(self): return self
+
+    def __next__(self):
+        if len(self.phases)==0: raise StopIteration
+        if self.current >= len(self.phases):
+            if not self.repeat: raise StopIteration
+            self.current = 0
+        res = self.phases[self.current]
+        self.current += 1
+        return res
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "phases=%r, " % self.phases
+        res += "repeat=%r, " % self.repeat
+        res += "current=%r" % self.current
+        res += ")" 
+        return res
+
+    def __str__(self):
+        return "PhaseIterator."
+
+
+
+class GameEngine(SecretYamlObject):
+    """Defines a complete Mafia-like game."""
+
+    yaml_tag = u"!GameEngine"
+    hidden_fields = ["logger"]
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: entities (list), status (dict), phase_iter (iterator)
+        """
         self.logger = logging.getLogger(__name__)
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
-        self.phase_gen = kwargs.get("phase_gen",PhaseGenerator())
-        #self.phase = None # next(self.phases) - None means game not started yet!
+        self.event_manager = EventManager()
+        self.phase_iter = kwargs.get("phase_iter",PhaseIterator())
         
         return
+
+
+    def __repr__(self):
+        #res = "%s(" % (self.__class__.__name__, )
+        #res += "entities=%r, " % self.entities
+        #res += "status=%r, " % self.status
+        #res += "phase_iter=%r" % self.phase_iter
+        #res += ")" 
+        return "GameEngine"
+
+    def yaml(self):
+        dct = self.__dict__
+        if "logger" in dct:
+            del(dct["logger"])
+        return yaml.dump(dct)
+
+    @staticmethod
+    def load(data):
+        vals = yaml.safe_load(data)
+        return GameEngine(
+            entities = vals["entities"],
+            status = vals["status"],
+            phase_iter = vals["phase_iter"]
+            )
 
     @property
     def phase(self):
@@ -140,7 +272,7 @@ class GameEngine(object):
     def next_phase(self):
         """Goes to next phase, and signals a 'phase_change'"""
         old_phase = self.phase
-        self.phase = next(self.phase_gen)
+        self.phase = next(self.phase_iter)
         self.event_manager.signal(
             "phase_change",
             {"previous_phase":old_phase,"new_phase":self.phase}

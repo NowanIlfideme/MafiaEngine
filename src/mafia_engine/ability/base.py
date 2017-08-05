@@ -17,8 +17,16 @@ class Ability(GameObject):
 
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "Ability."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "engine=%r" % self.engine        
+        res += ")"
+        return res
+
 
     pass
 
@@ -67,6 +75,20 @@ class ActivatedAbility(Ability):
                              "target":target}
                          )
         pass
+
+    def __str__(self):
+        return "ActivatedAbility." + str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "phase=%r, " % self.phase
+        res += "total_uses=%r, " % self.total_uses
+        res += "engine=%r" % self.engine
+        res += ")"
+        return res
+
+
     pass
 
 class AutomaticAbility(Ability):
@@ -81,5 +103,15 @@ class AutomaticAbility(Ability):
         #TODO: Add data members
 
         pass
+
+    def __str__(self):
+        return "AutomaticAbility." + str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "engine=%r" % self.engine
+        res += ")"
+        return res
 
     pass

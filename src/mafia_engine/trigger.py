@@ -23,8 +23,18 @@ class ConditionChecker(GameObject):
 
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "ConditionChecker."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "update_on=%r, " % self.update_on
+        res += "output_event=%r, " % self.output_event
+        res += "engine=%r" % self.engine        
+        res += ")"
+        return res
+
 
     def signal(self, event, parameters, notes=""):
         """Override this event to update status, possibly by getting data from the event."""
@@ -57,8 +67,19 @@ class AlignmentEliminationChecker(ConditionChecker):
         self.eliminated = False
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "AlignmentEliminationChecker."+ str(self.name)
+
+    def __repr__(self): #TODO!
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "update_on=%r, " % self.update_on
+        res += "alignment=%r, " % self.alignment
+        res += "output_event=%r, " % self.output_event
+        res += "engine=%r" % self.engine        
+        res += ")"
+        return res
+
 
     def signal(self, event, parameters, notes=""):
         """Gets called on death and, possibly, other events.

@@ -6,6 +6,8 @@ class EntityError(Exception): """Error with regards to entities."""
 class Entity(GameObject):
     """Denotes a game-world entity."""
 
+    yaml_tag = u"!Entity"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, subscriptions (list), status (dict)
@@ -13,20 +15,33 @@ class Entity(GameObject):
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         self.name = kwargs.get("name","")
-        for event in kwargs.get("subscriptions",[]):
+
+        self._subscriptions = kwargs.get("subscriptions",[])
+        for event in self._subscriptions:
             self.subscribe(event)
             pass
         self.status = kwargs.get("status",{})
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "Entity."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "status=%r, " % self.status
+        res += "subscriptions=%r, " % self._subscriptions
+        res += "engine=%r" % self.engine
+        res += ")" 
+        return res
+
     pass
 
 
 class Moderator(Entity):
     """Denotes the moderator (usually just a listener)."""
 
+    yaml_tag = u"!Moderator"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, subscriptions (list), status (dict)
@@ -37,25 +52,47 @@ class Moderator(Entity):
         
 
         pass
+    def __str__(self):
+        return "Moderator."+ str(self.name)
+
     def __repr__(self):
-        return "Mod."+ str(self.name)
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "status=%r, " % self.status
+        res += "subscriptions=%r, " % self._subscriptions
+        res += "engine=%r" % self.engine        
+        res += ")" 
+        return res
+
     pass
 
 
 class Alignment(Entity):
     """Denotes an alignment (team), which might have properties of its own."""
 
+    yaml_tag = u"!Alignment"
+
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list), status (dict)
+        Keys: name, subscriptions (list), status (dict), members
         """
         super().__init__(self, *args, **kwargs)
-        #TODO: Implement
-        self.members = []
+        #TODO: Implement members
+        self.members = kwargs.get("members",[])
         pass
     
-    def __repr__(self):
+    def __str__(self):
         return "Alignment."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "status=%r, " % self.status
+        res += "subscriptions=%r, " % self._subscriptions
+        res += "members=%r, " % self.members
+        res += "engine=%r" % self.engine        
+        res += ")" 
+        return res
 
     def add(self, actor):
         """Adds $actor to the alignment."""
@@ -73,6 +110,8 @@ class Alignment(Entity):
 class Actor(Entity):
     """Denotes an actor entity (i.e. individual that can action)."""
 
+    yaml_tag = u"!Actor"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, subscriptions (list), roles (list)
@@ -85,12 +124,25 @@ class Actor(Entity):
         
         super().__init__(self, *args, **kwargs)
         
-        #TODO: Implement
         self.roles = kwargs.get("roles",[])
+        #TODO: Implement alignment setting in Alignments?
         #self.__alignment = []
-        self.status = {}
+        #self.status = {}
         
         pass
+
+    def __str__(self):
+        return "Actor."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "status=%r, " % self.status
+        res += "subscriptions=%r, " % self._subscriptions
+        res += "roles=%r, " % self.roles
+        res += "engine=%r" % self.engine        
+        res += ")" 
+        return res
 
     @property
     def alignment(self):
@@ -112,8 +164,6 @@ class Actor(Entity):
         res = set(val) - set([R.alignment for R in self.roles])
         self.__alignment = list(res)
 
-    def __repr__(self):
-        return "Actor."+ str(self.name)
 
     def signal(self, event, parameters, notes=""):
         """Gets called on death and, possibly, other events."""
@@ -180,6 +230,8 @@ class Actor(Entity):
 class Player(Actor):
     """Denotes an player actor (i.e. an actual, human player)."""
 
+    yaml_tag = u"!Player"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, subscriptions, roles, alignment
@@ -188,8 +240,18 @@ class Player(Actor):
         #TODO: Implement player-specific stuff
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "Player."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "status=%r, " % self.status
+        res += "subscriptions=%r, " % self._subscriptions
+        res += "roles=%r, " % self.roles
+        res += "engine=%r" % self.engine        
+        res += ")" 
+        return res
 
     pass
 
@@ -203,6 +265,8 @@ class Role(GameObject):
         - TODO: Other stuff (such as ActionPoint restrictions?)
     """
     
+    yaml_tag = u"!Role"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, alignment, abilities, status
@@ -216,8 +280,19 @@ class Role(GameObject):
 
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "Role."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % (self.__class__.__name__, )
+        res += "name=%r, " % self.name
+        res += "status=%r, " % self.status
+        res += "alignment=%r, " % self.alignment
+        res += "abilities=%r, " % self.abilities
+        res += "engine=%r" % self.engine        
+        res += ")" 
+        return res
+
 
     def action(self, *args, **kwargs):
         """
