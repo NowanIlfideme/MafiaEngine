@@ -6,6 +6,8 @@ class Vote(ActivatedAbility):
     """Classic vote "ability". Phase restriction set manually.
     TODO: Implement."""
 
+    yaml_tag = u"!Vote"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, phase, total_uses, uses
@@ -38,6 +40,8 @@ class Vote(ActivatedAbility):
 class MKill(ActivatedAbility):
     """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
     TODO: Implement."""
+
+    yaml_tag = "!MKill"
 
     def __init__(self, *args, **kwargs):
         """
@@ -90,6 +94,8 @@ class MKill(ActivatedAbility):
 class MafiaAlignment(Alignment):
     """Denotes the mafia team."""
 
+    yaml_tag = u"!MafiaAlignment"
+
     def __init__(self, *args, **kwargs):
         """
         Keys: name, subscriptions (list), status (dict)
@@ -118,6 +124,8 @@ class MafiaAlignment(Alignment):
 
 class VoteTally(GameObject):
     """Holds the voting tally for the day."""
+    
+    yaml_tag = u"!VoteTally"
 
     def __init__(self, *args, **kwargs):
         """
@@ -172,8 +180,21 @@ class VoteTally(GameObject):
     def signal(self, event, parameters, notes=""):
         if event=="phase_change" and parameters["previous_phase"]=="day":
             #Process votes!
-            print("Votes: " + str(self.votes))
-            print("Total: " + str(self.voted))
+
+            #votes_str = str(self.votes)
+            votes_str = "{"
+            for k in self.votes:
+                votes_str += str(k) + "->" + str(self.votes[k]) + ", "
+            votes_str += "}"
+
+            #voted_str = str(self.voted)
+            voted_str = "{"
+            for k in self.voted:
+                voted_str += str(k) + ":" + str(self.voted[k]) + ", "
+            voted_str += "}"
+
+            print("Votes: " + votes_str)
+            print("Total: " + voted_str)
 
             target = self.lynch_result()
 
@@ -193,6 +214,9 @@ class VoteTally(GameObject):
 
 class TestMod(Moderator):
     """Example moderator."""
+
+    yaml_tag = u"!TestMod"
+
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.vote_tally = VoteTally()

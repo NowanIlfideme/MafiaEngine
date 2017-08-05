@@ -23,6 +23,14 @@ class SecretYamlObject(yaml.YAMLObject):
                del new_data.__dict__[item]
         res = dumper.represent_yaml_object(cls.yaml_tag, new_data, cls, flow_style=cls.yaml_flow_style)
         return res
+
+    #@classmethod
+    #def from_yaml(cls, loader, node):
+    #    # ...
+    #    data = super().from_yaml(loader,node)
+    #    data.logger = logging.getLogger(__name__)
+    #    return data
+
     pass
 
 class GameObject(SecretYamlObject):
@@ -108,15 +116,23 @@ class EventManager(SecretYamlObject):
     """
 
     yaml_tag = u"!EventManager"
+
     hidden_fields = ["logger"]
+
+    def __setstate__(self, kw):
+        """
+        Keys: listeners (dict), history (HistoryManager)
+        """
+        self.logger = logging.getLogger(__name__)  #normal Python logger
+        self.listeners = kw.get("listeners",{})
+        self.history = kw.get("history",HistoryManager())
+        return
 
     def __init__(self, *args, **kwargs):
         """
         Keys: listeners (dict), history (HistoryManager)
         """
-        self.listeners = {}
-        self.logger = logging.getLogger(__name__)  #normal Python logger
-        self.history = HistoryManager()
+        self.__setstate__(kwargs)
         return
 
     def __repr__(self):
@@ -125,22 +141,6 @@ class EventManager(SecretYamlObject):
         res += "history=%r" % self.history
         res += ")" 
         return res
-
-    def yaml(self):
-        dct = self.__dict__
-        if "loggr" in dct:
-            del(dct["logger"])
-        return yaml.dump(dct)
- 
-    @staticmethod
-    def load(data):
-        vals = yaml.safe_load(data)
-        return EventManager(
-            listeners = vals["listeners"],
-            history = vals["history"],
-            phase_iter = vals["phase_iter"]
-            )
-
 
     def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
         """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
@@ -165,7 +165,14 @@ class EventManager(SecretYamlObject):
         self.history.signal(event, parameters, notes)
         
         if event in self.listeners:
-            self.logger.debug("Signaling " + str(len(self.listeners[event])) + " with " + str(event) + " : " + str(parameters))
+            #par_str = str(parameters)
+            par_str = "{"
+            for key in parameters:
+                val = parameters[key]
+                par_str += str(key) + " : " + str(val) + ", "
+            par_str += "}"
+
+            self.logger.debug("Signaling " + str(len(self.listeners[event])) + " with " + str(event) + " : " + par_str)
             for l in self.listeners[event]:
                 try:
                     l.signal(event,parameters)
@@ -222,13 +229,12 @@ class GameEngine(SecretYamlObject):
     """Defines a complete Mafia-like game."""
 
     yaml_tag = u"!GameEngine"
-    hidden_fields = ["logger"]
+    #hidden_fields = ["logger"]
 
     def __init__(self, *args, **kwargs):
         """
         Keys: entities (list), status (dict), phase_iter (iterator)
         """
-        self.logger = logging.getLogger(__name__)
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
         self.event_manager = EventManager()
@@ -244,21 +250,6 @@ class GameEngine(SecretYamlObject):
         #res += "phase_iter=%r" % self.phase_iter
         #res += ")" 
         return "GameEngine"
-
-    def yaml(self):
-        dct = self.__dict__
-        if "logger" in dct:
-            del(dct["logger"])
-        return yaml.dump(dct)
-
-    @staticmethod
-    def load(data):
-        vals = yaml.safe_load(data)
-        return GameEngine(
-            entities = vals["entities"],
-            status = vals["status"],
-            phase_iter = vals["phase_iter"]
-            )
 
     @property
     def phase(self):

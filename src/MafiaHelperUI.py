@@ -1,67 +1,41 @@
-import sys, os, logging
+import sys, os, logging, yaml
 from mafia_engine.base import *
 #from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
 from mafia_engine.ability.base import *
 from mafia_engine.ability.simple import *
 from mafia_engine.trigger import *
-from mafia_engine.config import *
+from mafia_engine.io import load_game, dump_game
 
-import yaml
 
 default_args = [] #[2, 1]
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG) #INFO
 
 
-q = """
-import sys, os, yaml, logging
-os.chdir("C:\\Users\\Anato\\MafiaEngine\\src")
-from mafia_engine import *
-import mafia_engine as ME
-ge = ME.base.GameEngine(
-    phase_iter = ME.base.PhaseIterator(phases=["Day,Night"])
-    )
-q = yaml.dump(ge)
-print(q)
-# """
-
-def testyaml():
-    res = "<failed>"
-    with open("../resource/mountainous.yaml", 'r') as stream:
-        try:
-            res = yaml.load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-        pass
-    print(res)
-    pass
-
-def dump_engine(ge, fname):
-    #for ent in ge.entities:
-    #    print(yaml.dump(ent))
-    ffname = os.path.realpath(fname)
-    with open(ffname, 'w') as stream:
-        yaml.dump(ge, stream)
-        print("Dumped to {}".format(ffname))
-    return
-
 def main(*args):
     """Console test for the mafia engine."""
 
-    testyaml()
-    if len(args)==0:
-        n_town = int(input("Number of town: "))
-        n_mafia = int(input("Number of mafia: "))
+    fname="../resource/save_stage.yaml"
+
+    q = load_game(fname)
+    need_new_game = q is None or q.status.get("finished",False) is True
+    if need_new_game:
+        print("Previous game already finished or couldn't load.")
+        if len(args)==0:
+            n_town = int(input("Number of town: "))
+            n_mafia = int(input("Number of mafia: "))
+        else:
+            n_town = args[0]
+            n_mafia = args[1]
+        ge = setup(n_town, n_mafia)
     else:
-        n_town = args[0]
-        n_mafia = args[1]
-    ge = setup(n_town, n_mafia)
+        print("Continuing from previous game.")
+        ge = q
     menu(ge)
 
     #dump
-    fname="../resource/save_stage.yaml"
-    dump_engine(ge,fname)
+    dump_game(ge,fname)
     return
 
 def setup(n_town, n_mafia):
