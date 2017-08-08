@@ -10,7 +10,7 @@ class Entity(GameObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list), status (dict)
+        Keys: name, subscriptions (list), status (dict), members (list)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
@@ -21,6 +21,7 @@ class Entity(GameObject):
             self.subscribe(event)
             pass
         self.status = kwargs.get("status",{})
+        self.members = kwargs.get("members",[])
         pass
 
     def __str__(self):
@@ -29,10 +30,22 @@ class Entity(GameObject):
     def __repr__(self):
         res = "%s(" % (self.__class__.__name__, )
         res += "status=%r, " % self.status
+        res += "members=%r, " % self.members
         res += "subscriptions=%r, " % self._subscriptions
         res += "engine=%r" % self.engine
         res += ")" 
         return res
+
+    #Work with members
+    def add(self, ent): #TODO: Update so that it works correctly!
+        """Adds $ent to the entity."""
+        if not isinstance(ent, Entity):
+            raise EntityError("Cannot add " + str(ent) + ", is not an Entity.")
+        self.members.append(ent)
+        if ent.alignment is None: #TODO: Entity hierarchy redo.
+            ent.alignment = []
+        ent.alignment.append(self)
+        pass
 
     pass
 
@@ -46,8 +59,12 @@ class Moderator(Entity):
         """
         Keys: name, subscriptions (list), status (dict)
         """
+
+        #NOTE: "members" initializes to []
+
         super().__init__(self, *args, **kwargs)
-        #TODO: Implement
+
+        #NOTE: Implement own logic.
         
         
 
@@ -74,11 +91,9 @@ class Alignment(Entity):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list), status (dict), members
+        Keys: name, subscriptions (list), status (dict), members (list)
         """
         super().__init__(self, *args, **kwargs)
-        #TODO: Implement members
-        self.members = kwargs.get("members",[])
         pass
     
     def __str__(self):
@@ -88,21 +103,11 @@ class Alignment(Entity):
         res = "%s(" % (self.__class__.__name__, )
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
-        res += "subscriptions=%r, " % self._subscriptions
         res += "members=%r, " % self.members
+        res += "subscriptions=%r, " % self._subscriptions
         res += "engine=%r" % self.engine        
         res += ")" 
         return res
-
-    def add(self, actor):
-        """Adds $actor to the alignment."""
-        if not isinstance(actor, Actor):
-            raise EntityError("Cannot add " + str(actor) + ", is not an Actor.")
-        self.members.append(actor)
-        if actor.alignment is None:
-            actor.alignment = []
-        actor.alignment.append(self)
-        pass
 
     pass
 
@@ -121,6 +126,8 @@ class Actor(Entity):
             if "death" in kwargs["subscriptions"]:
                 kwargs["subscriptions"].append("death")
         else: kwargs["subscriptions"] = ["death"]
+
+        # "members" = []
         
         super().__init__(self, *args, **kwargs)
         
@@ -144,6 +151,7 @@ class Actor(Entity):
         res += ")" 
         return res
 
+    #TODO: Remake to search for alignment in tree.
     @property
     def alignment(self):
         #TODO: return alignments from roles
@@ -255,7 +263,7 @@ class Player(Actor):
 
     pass
 
-
+#TODO: Rewrite Role to be Entity-based!
 class Role(GameObject):
     """Denotes a game role, e.g. "mafioso" or "doctor".
     Roles consist of:

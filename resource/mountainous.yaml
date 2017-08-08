@@ -1,0 +1,170 @@
+&id001 !GameEngine
+entities:
+- &id009 !TestMod
+  _subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
+  engine: *id001
+  name: Moderator
+  status: {}
+  vote_tally: &id010 !VoteTally
+    engine: *id001
+    voted: {}
+    votes: {}
+- &id002 !Alignment
+  _subscriptions: []
+  engine: *id001
+  members:
+  - &id004 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie0
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
+  - &id005 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie1
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
+  - &id006 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie2
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
+  name: Town
+  status: {}
+- &id003 !MafiaAlignment
+  _subscriptions: [phase_change]
+  engine: *id001
+  members:
+  - &id007 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Mafioso0
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      - !MKill
+        engine: *id001
+        name: mkill
+        phase: [night]
+        total_uses: null
+        uses: null
+      alignment: *id003
+      engine: *id001
+      name: mafioso_role
+      status: {alive: true}
+    status: {}
+  - &id008 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Mafioso1
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      - !MKill
+        engine: *id001
+        name: mkill
+        phase: [night]
+        total_uses: null
+        uses: null
+      alignment: *id003
+      engine: *id001
+      name: mafioso_role
+      status: {alive: true}
+    status: {}
+  name: Mafia
+  status: {}
+- *id004
+- *id005
+- *id006
+- *id007
+- *id008
+event_manager: !EventManager
+  history: !HistoryManager {}
+  listeners:
+    alignment_eliminated:
+    - *id009
+    death:
+    - *id009
+    - *id004
+    - *id005
+    - *id006
+    - *id007
+    - *id008
+    - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
+      alignment: *id003
+      eliminated: false
+      engine: *id001
+      name: mafia_checker
+      output_event: alignment_eliminated
+      update_on: [death]
+    - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
+      alignment: *id002
+      eliminated: false
+      engine: *id001
+      name: town_checker
+      output_event: alignment_eliminated
+      update_on: [death]
+    mkill:
+    - *id009
+    phase_change:
+    - *id009
+    - *id010
+    - *id003
+    vote:
+    - *id009
+phase_iter: !<PhaseIterator>
+  current: 0
+  engine: null
+  phases: [day, night]
+  repeat: true
+status: {phase: null}

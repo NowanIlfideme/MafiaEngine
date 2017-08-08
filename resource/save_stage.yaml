@@ -1,11 +1,11 @@
 &id001 !GameEngine
 entities:
-- &id006 !TestMod
+- &id009 !TestMod
   _subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
   engine: *id001
   name: Moderator
   status: {}
-  vote_tally: &id008 !VoteTally
+  vote_tally: &id010 !VoteTally
     engine: *id001
     voted: {}
     votes: {}
@@ -31,7 +31,7 @@ entities:
       name: townie_role
       status: {alive: true}
     status: {}
-  - &id007 !Player
+  - &id005 !Player
     _subscriptions: [death]
     engine: *id001
     name: Townie1
@@ -48,14 +48,32 @@ entities:
       engine: *id001
       name: townie_role
       status: {alive: true}
-    status: {dead: true}
+    status: {}
+  - &id006 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Townie2
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      alignment: *id002
+      engine: *id001
+      name: townie_role
+      status: {alive: true}
+    status: {}
   name: Town
   status: {}
 - &id003 !MafiaAlignment
   _subscriptions: [phase_change]
   engine: *id001
   members:
-  - &id005 !Player
+  - &id007 !Player
     _subscriptions: [death]
     engine: *id001
     name: Mafioso0
@@ -79,20 +97,49 @@ entities:
       name: mafioso_role
       status: {alive: true}
     status: {}
+  - &id008 !Player
+    _subscriptions: [death]
+    engine: *id001
+    name: Mafioso1
+    roles:
+    - !Role
+      abilities:
+      - !Vote
+        engine: *id001
+        name: vote
+        phase: [day]
+        total_uses: null
+        uses: null
+      - !MKill
+        engine: *id001
+        name: mkill
+        phase: [night]
+        total_uses: null
+        uses: null
+      alignment: *id003
+      engine: *id001
+      name: mafioso_role
+      status: {alive: true}
+    status: {}
   name: Mafia
-  status: {mkill_used: false}
+  status: {}
 - *id004
 - *id005
+- *id006
+- *id007
+- *id008
 event_manager: !EventManager
   history: !HistoryManager {}
   listeners:
     alignment_eliminated:
-    - *id006
+    - *id009
     death:
-    - *id006
+    - *id009
     - *id004
-    - *id007
     - *id005
+    - *id006
+    - *id007
+    - *id008
     - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
       alignment: *id003
       eliminated: false
@@ -108,16 +155,16 @@ event_manager: !EventManager
       output_event: alignment_eliminated
       update_on: [death]
     mkill:
-    - *id006
+    - *id009
     phase_change:
-    - *id006
-    - *id008
+    - *id009
+    - *id010
     - *id003
     vote:
-    - *id006
+    - *id009
 phase_iter: !<PhaseIterator>
-  current: 2
+  current: 0
   engine: null
   phases: [day, night]
   repeat: true
-status: {phase: night}
+status: {phase: null}
