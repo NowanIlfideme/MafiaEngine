@@ -1,21 +1,30 @@
 &id001 !GameEngine
 entities:
-- &id009 !TestMod
+- &id006 !TestMod
   _subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
   engine: *id001
+  members: []
   name: Moderator
+  phase_iter: !PhaseIterator
+    current: 2
+    engine: *id001
+    name: ''
+    phases: [day, night]
+    repeat: true
   status: {}
   vote_tally: &id010 !VoteTally
     engine: *id001
+    name: ''
     voted: {}
     votes: {}
 - &id002 !Alignment
   _subscriptions: []
   engine: *id001
   members:
-  - &id004 !Player
+  - &id007 !Player
     _subscriptions: [death]
     engine: *id001
+    members: []
     name: Townie0
     roles:
     - !Role
@@ -30,10 +39,11 @@ entities:
       engine: *id001
       name: townie_role
       status: {alive: true}
-    status: {}
-  - &id005 !Player
+    status: {dead: true}
+  - &id008 !Player
     _subscriptions: [death]
     engine: *id001
+    members: []
     name: Townie1
     roles:
     - !Role
@@ -48,10 +58,11 @@ entities:
       engine: *id001
       name: townie_role
       status: {alive: true}
-    status: {}
-  - &id006 !Player
+    status: {dead: true}
+  - &id009 !Player
     _subscriptions: [death]
     engine: *id001
+    members: []
     name: Townie2
     roles:
     - !Role
@@ -66,16 +77,17 @@ entities:
       engine: *id001
       name: townie_role
       status: {alive: true}
-    status: {}
+    status: {dead: true}
   name: Town
   status: {}
 - &id003 !MafiaAlignment
   _subscriptions: [phase_change]
   engine: *id001
   members:
-  - &id007 !Player
+  - &id004 !Player
     _subscriptions: [death]
     engine: *id001
+    members: []
     name: Mafioso0
     roles:
     - !Role
@@ -97,9 +109,10 @@ entities:
       name: mafioso_role
       status: {alive: true}
     status: {}
-  - &id008 !Player
+  - &id005 !Player
     _subscriptions: [death]
     engine: *id001
+    members: []
     name: Mafioso1
     roles:
     - !Role
@@ -122,24 +135,21 @@ entities:
       status: {alive: true}
     status: {}
   name: Mafia
-  status: {}
+  status: {mkill_used: true}
 - *id004
 - *id005
-- *id006
-- *id007
-- *id008
-event_manager: !EventManager
+event: !EventManager
   history: !HistoryManager {}
   listeners:
     alignment_eliminated:
-    - *id009
+    - *id006
     death:
-    - *id009
-    - *id004
-    - *id005
     - *id006
     - *id007
     - *id008
+    - *id009
+    - *id004
+    - *id005
     - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
       alignment: *id003
       eliminated: false
@@ -149,22 +159,17 @@ event_manager: !EventManager
       update_on: [death]
     - !!python/object:mafia_engine.trigger.AlignmentEliminationChecker
       alignment: *id002
-      eliminated: false
+      eliminated: true
       engine: *id001
       name: town_checker
       output_event: alignment_eliminated
       update_on: [death]
     mkill:
-    - *id009
+    - *id006
     phase_change:
-    - *id009
+    - *id006
     - *id010
     - *id003
     vote:
-    - *id009
-phase_iter: !<PhaseIterator>
-  current: 0
-  engine: null
-  phases: [day, night]
-  repeat: true
-status: {phase: null}
+    - *id006
+status: {finished: true, phase: night}

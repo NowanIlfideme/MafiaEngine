@@ -128,7 +128,7 @@ entities:
 - *id006
 - *id007
 - *id008
-event_manager: !EventManager
+event: !EventManager
   history: !HistoryManager {}
   listeners:
     alignment_eliminated:

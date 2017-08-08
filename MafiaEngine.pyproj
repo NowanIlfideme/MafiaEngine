@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{b34dd730-2ad4-431d-ae98-da8e538bb0e8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile />
+    <StartupFile>src\MafiaHelperUI.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -26,12 +26,32 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\MafiaHelperUI.py" />
-    <Compile Include="src\mafia_engine\ability\base.py" />
-    <Compile Include="src\mafia_engine\ability\simple.py" />
-    <Compile Include="src\mafia_engine\ability\__init__.py" />
+    <Compile Include="src\mafia_engine\ability.py" />
+    <Compile Include="src\mafia_engine\preset\ability\simple.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\ability\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\entity\simple.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\entity\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\logic\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\logic\simple.py" />
     <Compile Include="src\mafia_engine\base.py" />
     <Compile Include="src\mafia_engine\entity.py" />
     <Compile Include="src\mafia_engine\io.py" />
+    <Compile Include="src\mafia_engine\preset\simple.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\mafia_engine\trigger.py" />
     <Compile Include="src\mafia_engine\__init__.py" />
   </ItemGroup>
@@ -40,7 +60,10 @@
     <Folder Include="resource" />
     <Folder Include="src" />
     <Folder Include="src\mafia_engine" />
-    <Folder Include="src\mafia_engine\ability" />
+    <Folder Include="src\mafia_engine\preset\" />
+    <Folder Include="src\mafia_engine\preset\ability\" />
+    <Folder Include="src\mafia_engine\preset\entity\" />
+    <Folder Include="src\mafia_engine\preset\logic\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|VisualStudio|Conda3" />

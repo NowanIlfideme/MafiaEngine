@@ -57,10 +57,12 @@ class ActivatedAbility(Ability):
         """
         Keys: actor, target
         """
+        #TODO: Rewrite as actual restrictions!
+
         #Check phase
         if self.phase is not None:
-            if self.phase.count(self.engine.phase)==0:
-                raise AbilityError(self.name + " cannot be used in phase " + str(self.engine.phase))
+            if self.phase.count(self.engine.status["phase"])==0:
+                raise AbilityError(self.name + " cannot be used in phase " + str(self.engine.status["phase"]))
             pass
 
         #Check num of uses

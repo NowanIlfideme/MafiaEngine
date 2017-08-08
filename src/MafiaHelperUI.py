@@ -1,11 +1,15 @@
 import sys, os, logging, yaml
 from mafia_engine.base import *
-#from mafia_engine.example.mountainous import *
 from mafia_engine.entity import *
-from mafia_engine.ability.base import *
-from mafia_engine.ability.simple import *
+from mafia_engine.ability import *
 from mafia_engine.trigger import *
 from mafia_engine.io import load_game, dump_game
+
+#imports simple game mechanics
+from mafia_engine.preset.simple import *
+#from mafia_engine.preset.logic.simple import * 
+#from mafia_engine.preset.ability.simple import * 
+#from mafia_engine.preset.entity.simple import * 
 
 
 default_args = [] #[2, 1]
@@ -16,7 +20,7 @@ logging.basicConfig(level=logging.DEBUG) #INFO
 def main(*args):
     """Console test for the mafia engine."""
 
-    fname="../resource/save_stage.yaml"
+    fname="./resource/save_stage.yaml" #or "../"?
 
     q = load_game(fname)
     need_new_game = q is None or q.status.get("finished",False) is True
@@ -41,7 +45,6 @@ def main(*args):
 def setup(n_town, n_mafia):
     """Sets up a mountainous game with the given params"""
     ge = GameEngine(
-        phase_iter = PhaseIterator(phases = ["day","night"]),
         status = {
             "phase":None
             }
@@ -54,7 +57,8 @@ def setup(n_town, n_mafia):
         subscriptions=["vote","mkill",
                        "phase_change",
                        "death",
-                       "alignment_eliminated"]
+                       "alignment_eliminated"],
+        phase_iter = PhaseIterator(phases = ["day","night"]),
         )
     ge.entities.append(mod)
 
@@ -125,7 +129,7 @@ def menu(ge):
             if ln.find("action")>=0:
                 prompt_action(ge)
             if ln.find("phase")>=0:
-                ge.next_phase()
+                do_next_phase(ge)
             if ln.find("")>=0:
                 pass
 
@@ -141,6 +145,12 @@ def menu(ge):
             print(e)
             pass
     pass
+
+def do_next_phase(ge):
+    mod = ge.entity_by_type(Moderator) #Well, actually TestMod
+    mod.next_phase()
+    pass
+
 
 def prompt_action(ge):
     names = [e.name for e in ge.entity_by_type(Actor,True)]

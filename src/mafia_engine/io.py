@@ -1,10 +1,8 @@
 import sys, os, logging, yaml
-from mafia_engine.base import *
-#from mafia_engine.example.mountainous import *
-from mafia_engine.entity import *
-from mafia_engine.ability.base import *
-from mafia_engine.ability.simple import *
-from mafia_engine.trigger import *
+#from mafia_engine.base import *
+#from mafia_engine.entity import *
+#from mafia_engine.ability import *
+#from mafia_engine.trigger import *
 
 def load_game(fname):
     ffname = os.path.realpath(fname)

@@ -1,5 +1,5 @@
 from mafia_engine.base import GameObject
-from mafia_engine.ability.base import *
+from mafia_engine.ability import *
 
 class EntityError(Exception): """Error with regards to entities."""
 
@@ -12,9 +12,11 @@ class Entity(GameObject):
         """
         Keys: name, subscriptions (list), status (dict), members (list)
         """
+
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
-        self.name = kwargs.get("name","")
+
+        
 
         self._subscriptions = kwargs.get("subscriptions",[])
         for event in self._subscriptions:

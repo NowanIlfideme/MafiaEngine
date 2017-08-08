@@ -1,6 +1,6 @@
 from mafia_engine.base import *
 from mafia_engine.entity import *
-from mafia_engine.ability.base import *
+from mafia_engine.ability import *
 
 class ConditionChecker(GameObject):
     """Checks if a condition is met, and if so triggers another event."""

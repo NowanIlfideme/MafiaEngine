@@ -1,10 +1,6 @@
 import yaml, logging
 from copy import deepcopy, copy
 
-def load_from_config(filename):
-    """Reads and loads from a YAML config file."""
-    #TODO: Add YAML-based config.
-    pass
 
 class SecretYamlObject(yaml.YAMLObject):
     """Helper class for YAML serialization.
@@ -44,16 +40,19 @@ class GameObject(SecretYamlObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: engine
+        Keys: engine, name
         """
         self.engine = kwargs.get("engine", self.default_engine)
-        
+        self.name = kwargs.get("name","")
+
         return
 
+    def __str__(self): return "<GameObject.%s>" % self.name
+
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
+        res += "name=%r, " % self.name
         res += "engine=%r" % self.engine
-        
         res += ")" 
         return res
 
@@ -64,16 +63,16 @@ class GameObject(SecretYamlObject):
 
     def send_signal(self, event, parameters, notes=""):
         """Signal the event manager that $event happened."""
-        self.engine.event_manager.signal(event,parameters=parameters,notes=notes)
+        self.engine.event.signal(event,parameters,notes=notes)
 
     def subscribe(self, event):
         """Subscribe $self (as listener) to $event."""
-        self.engine.event_manager.subscribe(event,self)
+        self.engine.event.subscribe(event,self)
         pass
 
     def unsubscribe(self, event):
         """Unsubscribe $self (as listener) from $event."""
-        self.engine.event_manager.unsubscribe(event,self)
+        self.engine.event.unsubscribe(event,self)
         pass
 
     pass
@@ -92,13 +91,12 @@ class HistoryManager(SecretYamlObject):
         """
         pass
 
+    def __str__(self): return "HistoryManager"
+
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += ")"
         return res
-
-    def __str__(self):
-        return "HistoryManager"
 
     def signal(self, event, parameters, notes=""):
         """Saves an event to history. TODO: Implement."""
@@ -119,7 +117,7 @@ class EventManager(SecretYamlObject):
 
     hidden_fields = ["logger"]
 
-    def __setstate__(self, kw):
+    def __setstate__(self, kw): # For (de)serialization
         """
         Keys: listeners (dict), history (HistoryManager)
         """
@@ -142,7 +140,7 @@ class EventManager(SecretYamlObject):
         res += ")" 
         return res
 
-    def subscribe(self, event, listener): #I would like to subscribe to "bee facts"
+    def subscribe(self, event, listener): 
         """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
         if event not in self.listeners:
             self.listeners[event] = []
@@ -150,7 +148,7 @@ class EventManager(SecretYamlObject):
         self.logger.debug("Subscription to: "+str(event)+" by "+str(listener))
         return
 
-    def unsubscribe(self, event, listener): #please stop sending me bee facts
+    def unsubscribe(self, event, listener): 
         """No longer get signal()'d with regards to @event."""
         if event in self.listeners:
             self.listeners[event].remove(listener)
@@ -159,18 +157,15 @@ class EventManager(SecretYamlObject):
             self.logger.debug("Unsubscription from: "+str(event)+" by "+str(listener))
         return
 
-    def signal(self, event, parameters, notes=""): #"bee facts" says: "male bees inherit genes only from their mothers"
+    def signal(self, event, parameters, notes=""): 
         """Notify all subscribers of @event by calling signal(@event, @parameters)."""
 
         self.history.signal(event, parameters, notes)
         
         if event in self.listeners:
-            #par_str = str(parameters)
-            par_str = "{"
-            for key in parameters:
-                val = parameters[key]
-                par_str += str(key) + " : " + str(val) + ", "
-            par_str += "}"
+            par_str = "{" + "".join([str(key) + " : " + str(parameters[key]) + ", " for key in parameters])[:-2] + "}"
+            #Instead of str(parameters), which gives the __repr__ of the param values...
+            #The "[:-2]" is for removing the trailing ", ". On an empty string, it doesn't matter.
 
             self.logger.debug("Signaling " + str(len(self.listeners[event])) + " with " + str(event) + " : " + par_str)
             for l in self.listeners[event]:
@@ -183,45 +178,6 @@ class EventManager(SecretYamlObject):
         return
 
     pass
-
-
-class PhaseIterator(GameObject):
-    """Iterates over the phases."""
-
-    yaml_tag = u"PhaseIterator"
-    #hidden_fields = []
-
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, phases, repeat
-        """
-        super().__init__(self, *args, **kwargs)
-        self.phases = kwargs.get("phases",[])
-        self.repeat = kwargs.get("repeat",True)
-        self.current = 0
-        pass
-
-    def __iter__(self): return self
-
-    def __next__(self):
-        if len(self.phases)==0: raise StopIteration
-        if self.current >= len(self.phases):
-            if not self.repeat: raise StopIteration
-            self.current = 0
-        res = self.phases[self.current]
-        self.current += 1
-        return res
-
-    def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
-        res += "phases=%r, " % self.phases
-        res += "repeat=%r, " % self.repeat
-        res += "current=%r" % self.current
-        res += ")" 
-        return res
-
-    def __str__(self):
-        return "PhaseIterator."
 
 
 
@@ -237,38 +193,27 @@ class GameEngine(SecretYamlObject):
         """
         self.entities = kwargs.get("entities",[])
         self.status = kwargs.get("status",{})
-        self.event_manager = EventManager()
-        self.phase_iter = kwargs.get("phase_iter",PhaseIterator())
-        
+        self.event = EventManager()        
         return
 
 
     def __repr__(self):
-        #res = "%s(" % (self.__class__.__name__, )
+        #Short; Otherwise it just explodes as we get recursive representation.
+        res = "%s(" % (self.__class__.__name__, )
         #res += "entities=%r, " % self.entities
         #res += "status=%r, " % self.status
-        #res += "phase_iter=%r" % self.phase_iter
-        #res += ")" 
-        return "GameEngine"
+        res += ")" 
+        return res 
 
-    @property
-    def phase(self):
-        return self.status["phase"]
+    #TODO: Remove phase property, MAYBE add it dynamically if needed.
+    #@property
+    #def phase(self):
+    #    return self.status["phase"]
 
-    @phase.setter
-    def phase(self, q):
-        self.status["phase"] = q
-        pass
-
-    def next_phase(self):
-        """Goes to next phase, and signals a 'phase_change'"""
-        old_phase = self.phase
-        self.phase = next(self.phase_iter)
-        self.event_manager.signal(
-            "phase_change",
-            {"previous_phase":old_phase,"new_phase":self.phase}
-            )
-        pass
+    #@phase.setter
+    #def phase(self, q):
+    #    self.status["phase"] = q
+    #    pass
 
     def entity_by_lambda(self, lamb, always_list=False):
         """Gets entities for whom $lamb(e) is True"""
