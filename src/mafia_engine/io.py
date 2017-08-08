@@ -17,8 +17,11 @@ def load_game(fname):
 
 def dump_game(ge, fname):
     ffname = os.path.realpath(fname)
-    with open(ffname, 'w') as stream:
-        yaml.dump(ge, stream)
-        print("Dumped to {}".format(ffname))
+    try:
+        with open(ffname, 'w') as stream:
+            yaml.dump(ge, stream)
+            print("Dumped to {}".format(ffname))
+    except Exception as e:
+        raise e
     return
 

@@ -30,7 +30,7 @@ class Entity(GameObject):
         return "Entity."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "status=%r, " % self.status
         res += "members=%r, " % self.members
         res += "subscriptions=%r, " % self._subscriptions
@@ -75,7 +75,7 @@ class Moderator(Entity):
         return "Moderator."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
         res += "subscriptions=%r, " % self._subscriptions
@@ -102,7 +102,7 @@ class Alignment(Entity):
         return "Alignment."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
         res += "members=%r, " % self.members
@@ -144,7 +144,7 @@ class Actor(Entity):
         return "Actor."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
         res += "subscriptions=%r, " % self._subscriptions
@@ -254,7 +254,7 @@ class Player(Actor):
         return "Player."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
         res += "subscriptions=%r, " % self._subscriptions
@@ -294,7 +294,7 @@ class Role(GameObject):
         return "Role."+ str(self.name)
 
     def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
+        res = "%s(" % self.__class__.__name__
         res += "name=%r, " % self.name
         res += "status=%r, " % self.status
         res += "alignment=%r, " % self.alignment

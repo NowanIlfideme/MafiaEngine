@@ -70,10 +70,21 @@ def setup(n_town, n_mafia):
     mteam = MafiaAlignment(name="Mafia")
     ge.entities.append(mteam)
 
+    
+            
+
     #Add town players
     for i in range(0,n_town):
-        abils = [
-            Vote(name = "vote", phase = ["day"]),
+        abil_vote = Vote(
+            name = "vote", 
+            restrictions = [
+                PhaseRestriction(name="phase_r", phases=["day"]),
+                TargetRestriction(name="target_r", target_types=[Actor])
+                ]
+        )
+        abils = [ 
+            abil_vote,
+            #Vote(name = "vote", phase = ["day"]),
             ]
         trole = Role(
             name = "townie_role",
@@ -92,9 +103,25 @@ def setup(n_town, n_mafia):
     #Add mafia players
     for i in range(0,n_mafia):
         #TODO: add abilities
+        abil_vote = Vote(
+            name = "vote", 
+            restrictions = [
+                PhaseRestriction(name="phase_r", phases=["day"]),
+                TargetRestriction(name="target_r", target_types=[Actor])
+                ]
+            )
+        abil_mkill = MKill(
+            name = "mkill", 
+            restrictions = [
+                PhaseRestriction(name="phase_r", phases=["night"]),
+                TargetRestriction(name="target_r", target_types=[Actor])
+                ]
+            )
         abils = [
-            Vote(name = "vote", phase = ["day"]),
-            MKill(name = "mkill", phase = ["night"]),
+            abil_vote,
+            abil_mkill,
+            #Vote(name = "vote", phase = ["day"]),
+            #MKill(name = "mkill", phase = ["night"]),
             ]
         mrole = Role(
             name = "mafioso_role",
@@ -124,7 +151,7 @@ def menu(ge):
         try:
             ln = input("> ")
             if ln.find("list")>=0:
-                print("Phase: " + str(ge.phase))
+                print("Phase: " + str(ge.status["phase"]))
                 print([e.name for e in ge.entity_by_type(Actor,True)])
             if ln.find("action")>=0:
                 prompt_action(ge)
@@ -142,7 +169,7 @@ def menu(ge):
             if ge.status.get("finished",False):
                 break
         except Exception as e:
-            print(e)
+            logger.exception()
             pass
     pass
 

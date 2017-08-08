@@ -2,6 +2,39 @@ from mafia_engine.base import GameObject
 
 class AbilityError(Exception): """Something wrong with an ability."""
 
+class AbilityRestriction(GameObject):
+    """Represents a callable "restriction" object, used to check
+    whether an ability is legal to use."""
+
+    yaml_tag = u"!AbilityRestriction"
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name
+        """
+        super().__init__(self, *args, **kwargs)        
+        pass
+
+    def __call__(self, abil, *args, **kwargs):
+        """Override this! Return True if you allow. 
+        In case of argument error, Raise AbilityError.
+        Make sure to call the super's method."""
+
+        #super().__call__(abil, *args, **kwargs) #ONLY for descendants
+        if not isinstance(abil, Ability):
+            raise AbilityError("Wrong type. 'abil' should be 'self'. \
+Exptected Ability, recieved " + str(abil.__class__.__name__))
+        return True
+
+    def __str__(self): return "AbilityRestriction."+ str(self.name)
+
+    def __repr__(self):
+        res = "%s(" % self.__class__.__name__
+        res += "engine=%r" % self.engine
+        res += ")" 
+        return res
+
+
 class Ability(GameObject):
     """Denotes an ability, which can be used as an Action.
     This is a base type for Activated and Automatic abilities
@@ -36,10 +69,15 @@ class ActivatedAbility(Ability):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, phase, total_uses, uses
+        Keys: name, restrictions (list of function)
+        where functions are of form restriction(ActivatedAbility, *args, **kwargs)
+        and throw AbilityError if 
+        DEPRECATED: phase, total_uses, uses (TODO: Remove these)
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Add data members
+
+        self.restrictions = kwargs.get("restrictions",[])
 
         #target restrictions, e.g. "can-self-target"
         
@@ -59,14 +97,17 @@ class ActivatedAbility(Ability):
         """
         #TODO: Rewrite as actual restrictions!
 
-        #Check phase
-        if self.phase is not None:
-            if self.phase.count(self.engine.status["phase"])==0:
-                raise AbilityError(self.name + " cannot be used in phase " + str(self.engine.status["phase"]))
-            pass
+        for r in self.restrictions:
+            try:
+                if not r(self, *args, **kwargs): 
+                    #If we fail even one restriction, we must return
 
-        #Check num of uses
-        #TODO: !
+                    #TEMP: For debugging
+                    raise AbilityError("Restriction activated: " + str(r))
+
+                    return #TODO: Add return value from actions?
+            except AbilityError as e:
+                raise #for debugging; in real life, you'd want to return
 
         target = kwargs.get("target", None)
         actor = kwargs.get("actor", None)
