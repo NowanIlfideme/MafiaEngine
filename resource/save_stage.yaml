@@ -1,0 +1,212 @@
+&id001 !GameEngine
+entity: !EntityManager
+  engine: *id001
+  members:
+  - &id007 !TestMod
+    engine: *id001
+    members: []
+    name: Moderator
+    phase_iter: !PhaseIterator
+      engine: *id001
+      name: ''
+      subscriptions: []
+    status: {}
+    subscriptions:
+    - &id006 !!python/name:mafia_engine.preset.event.simple.VoteEvent ''
+    - &id008 !!python/name:mafia_engine.preset.event.simple.MKillEvent ''
+    - &id005 !!python/name:mafia_engine.preset.event.simple.PhaseChangeEvent ''
+    - &id002 !!python/name:mafia_engine.preset.event.simple.DeathEvent ''
+    - &id016 !!python/name:mafia_engine.preset.event.simple.AlignmentEliminatedEvent ''
+  - &id017 !Alignment
+    engine: *id001
+    members:
+    - &id011 !Player
+      engine: *id001
+      members:
+      - !!python/object:mafia_engine.preset.ability.simple.VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases:
+          - day
+          subscriptions: []
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - &id003 !!python/name:mafia_engine.entity.Actor ''
+        subscriptions: []
+      name: Townie0
+      status: {}
+      subscriptions:
+      - *id002
+    - &id012 !Player
+      engine: *id001
+      members:
+      - !!python/object:mafia_engine.preset.ability.simple.VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases:
+          - day
+          subscriptions: []
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      name: Townie1
+      status: {}
+      subscriptions:
+      - *id002
+    - &id013 !Player
+      engine: *id001
+      members:
+      - !!python/object:mafia_engine.preset.ability.simple.VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases:
+          - day
+          subscriptions: []
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      name: Townie2
+      status: {}
+      subscriptions:
+      - *id002
+    name: Town
+    status: {}
+    subscriptions: []
+  - &id004 !MafiaAlignment
+    engine: *id001
+    members:
+    - &id014 !Player
+      engine: *id001
+      members:
+      - !!python/object:mafia_engine.preset.ability.simple.VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases:
+          - day
+          subscriptions: []
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      - !!python/object:mafia_engine.preset.ability.simple.MKillAbility
+        engine: *id001
+        name: mkill
+        restrictions:
+        - &id009 !!python/object:mafia_engine.preset.ability.simple.MKillPhaseRestriction
+          alignment: *id004
+          engine: *id001
+          mode: allow
+          name: mkill_phase_r
+          phases:
+          - night
+          subscriptions: []
+          used: false
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      name: Mafioso0
+      status: {}
+      subscriptions:
+      - *id002
+    - &id015 !Player
+      engine: *id001
+      members:
+      - !!python/object:mafia_engine.preset.ability.simple.VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases:
+          - day
+          subscriptions: []
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      - !!python/object:mafia_engine.preset.ability.simple.MKillAbility
+        engine: *id001
+        name: mkill
+        restrictions:
+        - &id010 !!python/object:mafia_engine.preset.ability.simple.MKillPhaseRestriction
+          alignment: *id004
+          engine: *id001
+          mode: allow
+          name: mkill_phase_r
+          phases:
+          - night
+          subscriptions: []
+          used: false
+        - !!python/object:mafia_engine.preset.ability.simple.TargetRestriction
+          engine: *id001
+          mode: allow
+          name: target_r
+          subscriptions: []
+          target_types:
+          - *id003
+        subscriptions: []
+      name: Mafioso1
+      status: {}
+      subscriptions:
+      - *id002
+    name: Mafia
+    status:
+      mkill_used: false
+    subscriptions:
+    - *id005
+  name: all_entities
+  status: {}
+  subscriptions: []
+event: !EventManager
+  history: !HistoryManager {}
+  listeners:
+    

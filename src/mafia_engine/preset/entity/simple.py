@@ -1,5 +1,9 @@
+from ruamel.yaml import YAML, yaml_object
+from mafia_engine.base import Y
 from mafia_engine.entity import *
+from mafia_engine.preset.event.simple import *
 
+@yaml_object(Y)
 class MafiaAlignment(Alignment):
     """Denotes the mafia team."""
 
@@ -11,18 +15,18 @@ class MafiaAlignment(Alignment):
         """
 
         if "subscriptions" in kwargs:
-            if "phase_change" not in kwargs["subscriptions"]:
-                kwargs["subscriptions"].append("phase_change")
-        else: kwargs["subscriptions"] = ["phase_change"]
+            if PhaseChangeEvent not in kwargs["subscriptions"]:
+                kwargs["subscriptions"].append(PhaseChangeEvent)
+        else: kwargs["subscriptions"] = [PhaseChangeEvent]
 
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         pass
     
-    def signal(self, event, parameters, notes=""):
-        super().signal(event, parameters, notes)
+    def signal(self, event):
+        super().signal(event)
 
-        if event=="phase_change":
+        if isinstance(event, PhaseChangeEvent):
             self.status["mkill_used"] = False
             pass
 

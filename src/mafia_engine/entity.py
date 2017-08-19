@@ -1,59 +1,16 @@
-from mafia_engine.base import GameObject
+from mafia_engine.base import GameObject, Entity, Y
 from mafia_engine.ability import *
+from mafia_engine.preset.event.simple import *
+
+from ruamel.yaml import YAML, yaml_object
 
 class EntityError(Exception): """Error with regards to entities."""
 
-class Entity(GameObject):
-    """Denotes a game-world entity."""
 
-    yaml_tag = u"!Entity"
-
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, subscriptions (list), status (dict), members (list)
-        """
-
-        super().__init__(self, *args, **kwargs)
-        #TODO: Implement
-
-        
-
-        self._subscriptions = kwargs.get("subscriptions",[])
-        for event in self._subscriptions:
-            self.subscribe(event)
-            pass
-        self.status = kwargs.get("status",{})
-        self.members = kwargs.get("members",[])
-        pass
-
-    def __str__(self):
-        return "Entity."+ str(self.name)
-
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "status=%r, " % self.status
-        res += "members=%r, " % self.members
-        res += "subscriptions=%r, " % self._subscriptions
-        res += "engine=%r" % self.engine
-        res += ")" 
-        return res
-
-    #Work with members
-    def add(self, ent): #TODO: Update so that it works correctly!
-        """Adds $ent to the entity."""
-        if not isinstance(ent, Entity):
-            raise EntityError("Cannot add " + str(ent) + ", is not an Entity.")
-        self.members.append(ent)
-        if ent.alignment is None: #TODO: Entity hierarchy redo.
-            ent.alignment = []
-        ent.alignment.append(self)
-        pass
-
-    pass
-
-
+@yaml_object(Y)
 class Moderator(Entity):
-    """Denotes the moderator (usually just a listener)."""
+    """Denotes the moderator (the main input point for game logic). Base class."""
+    # NOTE: Inherit and override.
 
     yaml_tag = u"!Moderator"
 
@@ -61,33 +18,27 @@ class Moderator(Entity):
         """
         Keys: name, subscriptions (list), status (dict)
         """
-
         #NOTE: "members" initializes to []
-
         super().__init__(self, *args, **kwargs)
-
         #NOTE: Implement own logic.
-        
-        
-
         pass
-    def __str__(self):
-        return "Moderator."+ str(self.name)
 
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "status=%r, " % self.status
-        res += "subscriptions=%r, " % self._subscriptions
-        res += "engine=%r" % self.engine        
-        res += ")" 
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            
+            } )
         return res
 
     pass
 
-
+@yaml_object(Y)
 class Alignment(Entity):
     """Denotes an alignment (team), which might have properties of its own."""
+    # NOTE: Inherit and override for each alignment.
 
     yaml_tag = u"!Alignment"
 
@@ -98,59 +49,53 @@ class Alignment(Entity):
         super().__init__(self, *args, **kwargs)
         pass
     
-    def __str__(self):
-        return "Alignment."+ str(self.name)
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "status=%r, " % self.status
-        res += "members=%r, " % self.members
-        res += "subscriptions=%r, " % self._subscriptions
-        res += "engine=%r" % self.engine        
-        res += ")" 
+        res = super().repr_map()
+        res.update( { 
+            
+            } )
         return res
 
     pass
 
-
+@yaml_object(Y)
 class Actor(Entity):
-    """Denotes an actor entity (i.e. individual that can action)."""
+    """Denotes an actor entity (i.e. individual that can action). Base class."""
+    # NOTE: Inherit and override for each actor.
 
     yaml_tag = u"!Actor"
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, subscriptions (list), roles (list)
+        Keys: name, subscriptions (list), members (list), status (dict)
         """
         #Pre-processing
-        if "subscriptions" in kwargs:
-            if "death" in kwargs["subscriptions"]:
-                kwargs["subscriptions"].append("death")
-        else: kwargs["subscriptions"] = ["death"]
 
-        # "members" = []
+        # Subscribe to own death, maybe?
+        kwargs["subscriptions"] = kwargs.get("subscriptions",[])
+        kwargs["subscriptions"].extend(
+            [
+                DeathEvent,
+            ]
+        )
+        # "members" are the new "roles"
         
         super().__init__(self, *args, **kwargs)
-        
-        self.roles = kwargs.get("roles",[])
-        #TODO: Implement alignment setting in Alignments?
-        #self.__alignment = []
-        #self.status = {}
+
         
         pass
+    
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def __str__(self):
-        return "Actor."+ str(self.name)
-
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "status=%r, " % self.status
-        res += "subscriptions=%r, " % self._subscriptions
-        res += "roles=%r, " % self.roles
-        res += "engine=%r" % self.engine        
-        res += ")" 
+        res = super().repr_map()
+        res.update( { 
+            
+            } )
         return res
 
     #TODO: Remake to search for alignment in tree.
@@ -175,16 +120,19 @@ class Actor(Entity):
         self.__alignment = list(res)
 
 
-    def signal(self, event, parameters, notes=""):
+    def signal(self, event):
         """Gets called on death and, possibly, other events."""
 
-        #TODO: Handle death gracefully by... removing ones self from the game.
-        #(as basic behavior - can be overridden, I guess)
-        if event=="death":
-            if parameters["target"]==self:
-                if self in self.engine.entities:
-                    self.engine.entities.remove(self)
+        #New behavior: Set own "dead" as True
+        if isinstance(event, DeathEvent):
+            if event.target==self:
+                self.status["dead"] = True
 
+        #Old behavior: Handle death gracefully by... removing ones self from the game.
+        #(as basic behavior - can be overridden, I guess)
+        #if isinstance(event,DeathEvent):
+        #    if event.target==self:
+        #        self.engine.entity.remove(self) #needs to be redone           
         pass
 
     def action(self, *args, **kwargs):
@@ -192,43 +140,24 @@ class Actor(Entity):
         Key: ability, <ability args>
         """
 
-        actor = self
-        
-        ability = kwargs.get("ability","")
-        #Find ability within roles
-        found_roles = []
-        for role in self.roles:
-            if role.find_ability(ability) is not None:
-                found_roles.append(role)
-            pass
-        if len(found_roles)==0:
-            #Try to find disambiguation
-            try:
-                r_name, ability = _disambiguize(ability) #split into role and ability
-                #Find role
-                for R in self.roles:
-                    if R.name==r_name:
-                        found_roles.append(R)
-            except: pass #len will still be 0
-        if len(found_roles)!=1:
-            raise AbilityError("Could not determine ability \
-            exactly. Found roles: " + str(found_roles))
+        abil_name = kwargs.get("ability","")
 
-        kwargs["ability"]=ability
-        #Below are things the "role" figures out by itself
-        #target = kwargs.get("target","")
-        found_roles[0].action(actor=actor, **kwargs)
+        found_abils = self.members_by_name(abil_name, True)
+        found_abils = [a for a in found_abils if isinstance(a, ActivatedAbility)]
+
+        if len(found_abils)!=1:
+            raise AbilityError("Could not determine ability \
+            exactly. Found: " + str(found_abils))
+        fa = found_abils[0]
+
+        kwargs["actor"] = kwargs.get("actor", self)
+        fa.action(*args, **kwargs)
+
         pass
 
-    def get_abilities(self):
-        res = []
-        for r in self.roles:
-            for a in r.abilities:
-                res.append(a)
-        return res
-
     def get_ability_names(self):
-        return [a.name for a in self.get_abilities()]
+        lamb = lambda x : isinstance(x,Ability)
+        return [a.name for a in self.members_by_lambda(lamb,True)]
 
     def _disambiguize(ability="."):
         """Breaks down ability into rolename and abilityname"""
@@ -236,9 +165,10 @@ class Actor(Entity):
         return q[0], q[1]
     pass
 
-
+@yaml_object(Y)
 class Player(Actor):
     """Denotes an player actor (i.e. an actual, human player)."""
+    # NOTE: Inherit and override for each player.
 
     yaml_tag = u"!Player"
 
@@ -250,22 +180,22 @@ class Player(Actor):
         #TODO: Implement player-specific stuff
         pass
 
-    def __str__(self):
-        return "Player."+ str(self.name)
+    
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "status=%r, " % self.status
-        res += "subscriptions=%r, " % self._subscriptions
-        res += "roles=%r, " % self.roles
-        res += "engine=%r" % self.engine        
-        res += ")" 
+        res = super().repr_map()
+        res.update( { 
+            
+            } )
         return res
 
     pass
 
+
 #TODO: Rewrite Role to be Entity-based!
+@yaml_object(Y)
 class Role(GameObject):
     """Denotes a game role, e.g. "mafioso" or "doctor".
     Roles consist of:
@@ -289,19 +219,6 @@ class Role(GameObject):
         self.status = kwargs.get("status",{})       # name : value
 
         pass
-
-    def __str__(self):
-        return "Role."+ str(self.name)
-
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "status=%r, " % self.status
-        res += "alignment=%r, " % self.alignment
-        res += "abilities=%r, " % self.abilities
-        res += "engine=%r" % self.engine        
-        res += ")" 
-        return res
 
 
     def action(self, *args, **kwargs):

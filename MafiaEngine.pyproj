@@ -39,6 +39,12 @@
     <Compile Include="src\mafia_engine\preset\entity\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\mafia_engine\preset\event\simple.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\preset\event\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\mafia_engine\preset\logic\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -52,6 +58,9 @@
     <Compile Include="src\mafia_engine\preset\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\mafia_engine\test.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\mafia_engine\trigger.py" />
     <Compile Include="src\mafia_engine\__init__.py" />
   </ItemGroup>
@@ -63,6 +72,7 @@
     <Folder Include="src\mafia_engine\preset\" />
     <Folder Include="src\mafia_engine\preset\ability\" />
     <Folder Include="src\mafia_engine\preset\entity\" />
+    <Folder Include="src\mafia_engine\preset\event\" />
     <Folder Include="src\mafia_engine\preset\logic\" />
   </ItemGroup>
   <ItemGroup>

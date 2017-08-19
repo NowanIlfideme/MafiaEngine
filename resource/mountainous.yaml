@@ -1,7 +1,7 @@
 &id001 !GameEngine
 entities:
 - &id009 !TestMod
-  _subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
+  subscriptions: [vote, mkill, phase_change, death, alignment_eliminated]
   engine: *id001
   name: Moderator
   status: {}
@@ -10,11 +10,11 @@ entities:
     voted: {}
     votes: {}
 - &id002 !Alignment
-  _subscriptions: []
+  subscriptions: []
   engine: *id001
   members:
   - &id004 !Player
-    _subscriptions: [death]
+    subscriptions: [death]
     engine: *id001
     name: Townie0
     roles:
@@ -32,7 +32,7 @@ entities:
       status: {alive: true}
     status: {}
   - &id005 !Player
-    _subscriptions: [death]
+    subscriptions: [death]
     engine: *id001
     name: Townie1
     roles:
@@ -50,7 +50,7 @@ entities:
       status: {alive: true}
     status: {}
   - &id006 !Player
-    _subscriptions: [death]
+    subscriptions: [death]
     engine: *id001
     name: Townie2
     roles:
@@ -70,11 +70,11 @@ entities:
   name: Town
   status: {}
 - &id003 !MafiaAlignment
-  _subscriptions: [phase_change]
+  subscriptions: [phase_change]
   engine: *id001
   members:
   - &id007 !Player
-    _subscriptions: [death]
+    subscriptions: [death]
     engine: *id001
     name: Mafioso0
     roles:
@@ -98,7 +98,7 @@ entities:
       status: {alive: true}
     status: {}
   - &id008 !Player
-    _subscriptions: [death]
+    subscriptions: [death]
     engine: *id001
     name: Mafioso1
     roles:

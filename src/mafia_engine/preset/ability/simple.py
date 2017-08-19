@@ -2,7 +2,7 @@ from mafia_engine.base import *
 from mafia_engine.ability import *
 from mafia_engine.entity import *
 
-
+@yaml_object(Y)
 class PhaseRestriction(AbilityRestriction):
     """Restriction on use phase."""
     
@@ -34,21 +34,68 @@ class PhaseRestriction(AbilityRestriction):
         elif self.mode=="ban": return not found
         return False
 
-    def __str__(self): return "PhaseRestriction."+ str(self.name)
+    
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def __repr__(self):
-        dct = { 
-            "name": self.name, 
-            "phases": self.phases, 
-            "mode": self.mode, 
-            "engine": self.engine
-            }
-        res = "%s(" % self.__class__.__name__
-        res += ", ".join([q+"=%r" for q in dct]) % tuple([dct[q] for q in dct])
-        res += ")" 
+        res = super().repr_map()
+        res.update( { 
+            "phases":self.phases,
+            "mode":self.mode,
+            } )
         return res
+
     pass
 
+class MKillPhaseRestriction(PhaseRestriction):
+    """Restriction on use phase and once-per-phase."""
+    
+    yaml_tag = u"!MKillPhaseRestriction"
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, alignment (Alignment), phases (list), mode="allow" (alt: "ban")
+        """
+        super().__init__(self, *args, **kwargs)
+        self.alignment = kwargs.get("alignment",None)
+        
+        #setup special stuff
+        self.engine.event.subscribe(PhaseChangeEvent,self)
+        self.engine.event.subscribe(MKillEvent,self)
+        self.used = False
+        pass
+
+    def __call__(self, abil, *args, **kwargs):
+        """Returns True if ability is allowed."""
+
+        sup_tst = super().__call__(abil, *args, **kwargs)
+        if not sup_tst: return False
+
+        #custom code below
+        return not self.used
+
+    def signal(self, event):
+        if isinstance(event,PhaseChangeEvent):
+            self.used = False
+        elif isinstance(event, MKillEvent):
+            self.used = True
+        pass
+
+    
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            "alignment":self.alignment,
+            "phases":self.phases,
+            "mode":self.mode,
+            } )
+        return res
+
+    pass
 
     
 class TargetRestriction(AbilityRestriction):
@@ -86,78 +133,69 @@ class TargetRestriction(AbilityRestriction):
         elif self.mode=="ban": return not found
         return False
 
-    def __str__(self): return "TargetRestriction."+ str(self.name)
-
-    def __repr__(self):
-        dct = { 
-            "name": self.name, 
-            "target_types": self.target_types, 
-            "mode": self.mode, 
-            "engine": self.engine
-            }
-        res = "%s(" % self.__class__.__name__
-        res += ", ".join([q+"=%r" for q in dct]) % tuple([dct[q] for q in dct])
-        res += ")" 
-        return res
-    pass
-
-
-
     
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-class Vote(ActivatedAbility):
-    """Classic vote "ability". Phase restriction set manually.
-    TODO: Implement."""
+        res = super().repr_map()
+        res.update( { 
+            "target_types":self.target_types, #NOTE: This might cause problems!
+            "mode":self.mode,
+            } )
+        return res
 
-    yaml_tag = u"!Vote"
+    pass
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, phase, total_uses, uses
-        """
-        #TODO: Add data members
-        #target restrictions, e.g. "can-self-target"
-        #phase restrictions, e.g. "day" or "night"
-        #number of uses, e.g. "X-shot", or "unlimited"
 
-        #TODO: Add restrictions here instead of in MafiaHelperUI
 
-        super().__init__(self, *args, **kwargs)
+class VoteAction(Action):
+    """Signals that a player voted for another.
+    TODO: Implement a change to the VoteTally instead of doing it there!"""
 
-        #
-
-        pass
+    yaml_tag = u"!VoteAction"
 
     def action(self, *args, **kwargs):
-        """
-        Keys: actor, target
-        """
-        super().action(self, *args, **kwargs)
-
-        # NOTE: All that needs to be done is signal intent...
+        """Just sends a vote event."""
+        self.engine.event.signal(
+            VoteEvent(
+                actor=kwargs.get("actor",None),
+                target=kwargs.get("target",None),
+                )
+            )
         pass
     pass
 
-class MKill(ActivatedAbility):
-    """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
+
+class VoteAbility(ActivatedAbility):
+    """Classic vote "ability". Phase restriction set at "day" and "actor".
     TODO: Implement."""
 
-    yaml_tag = "!MKill"
+    yaml_tag = u"!VoteAbility"
+
+    @property
+    def action_type(self):
+        return VoteAction
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, phase, total_uses, uses
+        Keys: name
         """
-
         #TODO: Add data members
-        #target restrictions, e.g. "can-self-target"
-        #phase restrictions, e.g. "day" or "night"
-        #number of uses, e.g. "X-shot", or "unlimited"
-        #
 
-        #TODO: Add restrictions here instead of in MafiaHelperUI
 
+        # Add base restrictions
+        kwargs["restrictions"] = kwargs.get("restrictions",[])
+        kwargs["restrictions"].extend(
+            [
+            PhaseRestriction(name="phase_r", phases=["day"]),
+            TargetRestriction(name="target_r", target_types=[Actor])
+            ]
+        )
         super().__init__(self, *args, **kwargs)
+
+
+        #
 
         pass
 
@@ -165,26 +203,62 @@ class MKill(ActivatedAbility):
         """
         Keys: actor, target
         """
-        super().action(self, *args, **kwargs)
 
+        super().action(self, *args, **kwargs)
+        pass
+    pass
+
+class MKillAction(Action):
+    """Does a mafia kill action.
+    TODO: Implement actual action, not just events?"""
+    
+    yaml_tag = u"!MKillAction"
+
+    def action(self, *args, **kwargs):
+        """Just sends the requried events."""
         target = kwargs.get("target", None)
         actor = kwargs.get("actor", None)
 
-        #TODO: Move to Restriction!
-        #Check if mafiakill has been used already! (via "status" of self.alignment)
-        mkill_used = False
-        if actor.alignment[0].status.get("mkill_used", False): 
-            mkill_used = True
-        if mkill_used:
-            raise AbilityError(self.name + " failed: already used!")
+        self.send_signal(MKillEvent(actor=actor,target=target))
+        self.send_signal(DeathEvent(target=target))
+        pass
 
 
-        #Perform the kill!
-        actor.alignment[0].status["mkill_used"] = True
-        target.status["dead"] = True
-        self.send_signal("death", parameters = { "target":target } )
+class MKillAbility(ActivatedAbility):
+    """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
+    TODO: Implement."""
 
+    yaml_tag = "!MKillAbility"
 
+    @property
+    def action_type(self):
+        return MKillAction
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, alignment
+        """
+
+        # Add base restrictions
+        m_align = kwargs.get("alignment", None)
+
+        kwargs["restrictions"] = kwargs.get("restrictions",[])
+        kwargs["restrictions"].extend(
+            [
+            MKillPhaseRestriction(name="mkill_phase_r", alignment=m_align, phases=["night"]),
+            TargetRestriction(name="target_r", target_types=[Actor]),
+            ]
+        )
+
+        super().__init__(self, *args, **kwargs)
+
+        pass
+
+    def action(self, *args, **kwargs):
+        """
+        Keys: actor, target
+        """
+        super().action(self, *args, **kwargs)
         pass
     pass
 

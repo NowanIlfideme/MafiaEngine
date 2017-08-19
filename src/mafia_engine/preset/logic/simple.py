@@ -1,7 +1,8 @@
 from mafia_engine.base import *
 from mafia_engine.entity import *
+from mafia_engine.preset.event.simple import *
 
-
+@yaml_object(Y)
 class TestMod(Moderator):
     """Example moderator. Handles game logic."""
 
@@ -16,24 +17,36 @@ class TestMod(Moderator):
     def next_phase(self):
         """Goes to next phase, and signals a 'phase_change'"""
 
-        #TODO: Fix by changing status, not direct property!
         old_phase = self.engine.status["phase"]
         new_phase = next(self.phase_iter)
 
         self.engine.status["phase"] = new_phase
         self.engine.event.signal(
-            "phase_change",
-            {"previous_phase":old_phase,"new_phase":new_phase}
+            PhaseChangeEvent(previous=old_phase,current=new_phase)
             )
 
         pass
 
+    
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def signal(self, event, parameters, notes=""):
+        res = super().repr_map()
+        res.update( { 
+            "phase_iter":self.phase_iter,
+            } )
+        return res
+
+
+    def signal(self, event):
 
         #Get info
         prefix = "-> "
 
+        #TODO: Fix to actually work with new-style events!
+
+        """
         if "target" in parameters:
             real_target = parameters["target"]
             try: target = real_target.name
@@ -52,39 +65,42 @@ class TestMod(Moderator):
             except: alignment = str(real_alignment)
         else: alignment = "<unknown>"            
 
+        """
+
         #Get message
 
-        if event=="": pass
+        #TODO: Change for the type!
 
-        if event=="vote":
-            print(prefix + actor + " voted for " + target + "!")
-            self.vote_tally.add_vote(real_actor, real_target)
+        if isinstance(event, VoteEvent): 
+            print(prefix + event.actor.name + " voted for " + event.target.name + "!")
+            self.vote_tally.add_vote(event.actor, event.target)
             pass
 
-        if event=="phase_change":
+        if isinstance(event, PhaseChangeEvent):
             print(prefix + "Phase changed, now: " + self.engine.status["phase"])
             pass
 
-        if event=="mkill": 
-            print(prefix + actor + " mkilled " + target + "!")
+        if isinstance(event, MKillEvent): 
+            print(prefix + event.actor.name + " used mkill on " + event.target.name + "!")
             pass
 
-        if event=="death":
-            print(prefix + target + " died!")
+        if isinstance(event, DeathEvent):
+            print(prefix + event.target.name + " died!")
             pass
 
-        if event=="alignment_eliminated":
-            print(prefix + alignment + " was eliminated!")
+        if isinstance(event, AlignmentEliminatedEvent):
+            print(prefix + event.alignment.name + " was eliminated!")
             #TODO: Game-end behavior, for the simple game!
-            tmp = self.engine.entity_by_type(Alignment,True)
-            tmp.remove(parameters["alignment"])
+            tmp = self.engine.entity.members_by_type(Alignment, True)
+            tmp.remove(event.alignment)
             print(prefix + tmp[0].name + " has won!")
             self.engine.status["finished"]=True
             pass
 
         pass
+    pass
 
-
+@yaml_object(Y)
 class VoteTally(GameObject):
     """Holds the voting tally for the day."""
     
@@ -95,7 +111,7 @@ class VoteTally(GameObject):
         Keys: engine
         """
         super().__init__(self, *args, **kwargs)
-        self.subscribe("phase_change")
+        self.subscribe(PhaseChangeEvent)
         
         self.votes = {}
         self.voted = {}
@@ -140,8 +156,8 @@ class VoteTally(GameObject):
 
         pass
     
-    def signal(self, event, parameters, notes=""):
-        if event=="phase_change" and parameters["previous_phase"]=="day":
+    def signal(self, event):
+        if isinstance(event, PhaseChangeEvent) and event.previous=="day":
             #Process votes!
 
             #votes_str = str(self.votes)
@@ -163,9 +179,9 @@ class VoteTally(GameObject):
 
             #Kill person (if None, then pass)
             if target is not None:
-                self.send_signal("lynch", parameters = { "target":target })
+                self.send_signal(LynchEvent(target=target))
                 target.status["dead"] = True
-                self.send_signal("death", parameters = { "target":target } )
+                self.send_signal(DeathEvent(target=target))
                 pass
 
             #Reset voting
@@ -175,12 +191,11 @@ class VoteTally(GameObject):
 
     pass
 
-
+@yaml_object(Y)
 class PhaseIterator(GameObject):
     """Iterates over the phases sequentially."""
 
     yaml_tag = u"!PhaseIterator"
-    #hidden_fields = []
 
     def __init__(self, *args, **kwargs):
         """

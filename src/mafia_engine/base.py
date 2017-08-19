@@ -1,35 +1,68 @@
-import yaml, logging
-from copy import deepcopy, copy
+import logging
+import sys
 
+from ruamel.yaml import YAML, yaml_object
 
-class SecretYamlObject(yaml.YAMLObject):
-    """Helper class for YAML serialization.
-    Source: https://stackoverflow.com/questions/22773612/how-can-i-ignore-a-member-when-serializing-an-object-with-pyyaml """
+Y = YAML(typ='unsafe', pure=True)
+Y.default_flow_style=False
+
+@yaml_object(Y)
+class RepresentableObject(object):
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         pass
 
-    hidden_fields = []
-    @classmethod
-    def to_yaml(cls,dumper,data):
-        new_data = copy(data)
-        for item in cls.hidden_fields:
-            if item in new_data.__dict__:
-               del new_data.__dict__[item]
-        res = dumper.represent_yaml_object(cls.yaml_tag, new_data, cls, flow_style=cls.yaml_flow_style)
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        #res = super().repr_map()
+        #res.update( {} )
+        res = {}
         return res
 
-    #@classmethod
-    #def from_yaml(cls, loader, node):
-    #    # ...
-    #    data = super().from_yaml(loader,node)
-    #    data.logger = logging.getLogger(__name__)
-    #    return data
+    def __str__(self): 
+        if hasattr(self,"name"):
+            return "%s.%s" % (self.__class__.__name__, self.name)
+        else: return "<%s>" % (self.__class__.__name__)
 
+    def __repr__(self):
+        res = "%s(" % self.__class__.__name__
+        res += ", ".join(str(k)+"="+repr(v) for k,v in self.repr_map().items())
+        res += ")" 
+        return res
+    
+    @classmethod
+    def to_yaml(cls, representer, node):
+        return representer.represent_mapping(cls.yaml_tag,
+            node.repr_map())
+    
+    @classmethod
+    def from_repr(cls, txt):
+
+        txt = node.value
+        cls_name, raw_args = txt.split('(',1)
+        raw_args = raw_args.rsplit(')',1)[0]
+        args = raw_args.split(", ")
+        kwargs = {}
+        for arg in args:
+            k, v = args.split('=',1)
+            kwargs[k]=v
+            #TODO: Fix! "v" is a string now, should be object
+        res = cls(**kwargs)
+        return res
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        #TODO: read representation!
+        raise NotImplementedError()
+        return res
     pass
 
-class GameObject(SecretYamlObject):
+
+
+@yaml_object(Y)
+class GameObject(RepresentableObject):
     """Defines a game object. This helps in finding the object's environment 
     (i.e. the current game, symbolized by a GameEngine reference).
     Through that, it can find the EventManager, other GameObjects, etc."""
@@ -40,30 +73,39 @@ class GameObject(SecretYamlObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: engine, name
+        Keys: engine, name, subscriptions
         """
         self.engine = kwargs.get("engine", self.default_engine)
         self.name = kwargs.get("name","")
 
+        self.subscriptions = kwargs.get("subscriptions",[])
+        for event in self.subscriptions:
+            self.subscribe(event)
+            pass
+
         return
 
-    def __str__(self): return "<GameObject.%s>" % self.name
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "engine=%r" % self.engine
-        res += ")" 
+        res = super().repr_map()
+        res.update( { 
+            'name':self.name,
+            'subscriptions':self.subscriptions,
+            'engine':self.engine,
+           } )
         return res
 
-    def signal(self, event, parameters, notes=""):
+
+    def signal(self, event):
         """Signals $self that $event happened.
         Override this."""
         pass
 
-    def send_signal(self, event, parameters, notes=""):
+    def send_signal(self, event):
         """Signal the event manager that $event happened."""
-        self.engine.event.signal(event,parameters,notes=notes)
+        self.engine.event.signal(event)
 
     def subscribe(self, event):
         """Subscribe $self (as listener) to $event."""
@@ -77,34 +119,183 @@ class GameObject(SecretYamlObject):
 
     pass
 
-class HistoryManager(SecretYamlObject):
+@yaml_object(Y)
+class ProxyObject(GameObject): 
+    """Base class for temporary/use objects."""
+    # TODO: Implement!
+    pass
+
+
+@yaml_object(Y)
+class HistoryManager(RepresentableObject):
     """Saves all events in chronological and searchable order.
     TODO: Implement!
     """
 
     yaml_tag = u"!HistoryManager"
-    #hidden_fields = []
 
     def __init__(self, *args, **kwargs):
-        """
-        Keys: <none>
-        """
+        """Keys: <none>"""
         pass
 
     def __str__(self): return "HistoryManager"
 
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += ")"
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { } )
         return res
 
-    def signal(self, event, parameters, notes=""):
+    def signal(self, event):
         """Saves an event to history. TODO: Implement."""
         pass
 
     pass
 
-class EventManager(SecretYamlObject):
+
+@yaml_object(Y)
+class Entity(GameObject):
+    """Denotes a game-world entity. Base class."""
+
+    yaml_tag = u"!Entity"
+
+    def __init__(self, *args, **kwargs):
+        """
+        Keys: name, subscriptions (list), status (dict), members (list)
+        """
+
+        super().__init__(self, *args, **kwargs)
+
+        #Note: subscriptions handled in GameObject
+        self.status = kwargs.get("status",{})
+        self.members = kwargs.get("members",[])
+        pass
+
+    def signal(self, event):
+        """Gets called when subscribed to other events."""
+        pass # Override.
+
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            'status':self.status,
+            'members':self.members,
+            } )
+        return res
+
+    # Work with members:
+
+    def members_by_lambda(self, lamb, recursive = False):
+        """Gets members for whom $lamb(e) is True"""
+        found_membs = []
+        if recursive:
+            for e in self.members:
+                if lamb(e): found_membs.append(e)
+                try:
+                    tmp = e.members_by_lambda(lamb, recursive)
+                    found_membs.extend(tmp)
+                except: pass #we can't tell whether they implement
+        else:
+            for e in self.members:
+                if lamb(e): found_membs.append(e)
+        return found_membs
+
+    def members_by_name(self, name, recursive = False):
+        """Gets entities whose name is $name."""
+        return self.members_by_lambda(
+            lambda e: e.name==name, recursive)
+
+    def members_by_type(self, type, recursive = False):
+        """Gets members who are instances of $type."""
+        return self.members_by_lambda(
+            lambda e: isinstance(e, type), recursive)
+
+    def members_by_status(self, status, recursive = False):
+        """Gets members whose $status exists and conforms to it."""
+        lamb = lambda x : hasattr(x,"status") and all(
+            [k in x.status and x.status[k]==status[k] for k in status] )
+        return self.members_by_lambda(lamb, recursive)
+    
+    pass
+
+@yaml_object(Y)
+class EntityManager(Entity):
+    """Global entity manager."""
+
+    yaml_tag = u"!EntityManager"
+
+    # TODO: Implement!
+
+    pass
+
+
+
+
+
+#@yaml_object(Y)
+class Event(object):
+    """In-game event. 'interface' represents arguments 
+    that will be added to definition, along with their
+    default values. Base class."""
+
+    yaml_tag = u"!Event"
+    interface = {} # name:"<empty event>" }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        for att in self.interface:
+            setattr(self, att, kwargs.get(att,self.interface[att]))
+        # Extend or override for own behavior
+        pass
+
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            'interface':self.interface,
+            } )
+        return res
+
+    pass
+
+
+@yaml_object(Y)
+class Action(GameObject):
+    """In-game action, with automatic event handling.
+    Actions are working types. Base class."""
+
+    def action(self, *args, **kwargs):
+        """Active portion of the class. Override this!"""
+        self.engine.event.signal(
+            Event(name="Dummy action with args: %s" % kwargs)
+            )
+        pass
+
+    def __call__(self, *args, **kwargs):
+        """Performs the Action. 
+        Given as convenience - do not override!"""
+        self.action(*args, **kwargs)
+        pass
+
+    def __repr__(self):
+        return "TODO: Action representation."
+
+    def __str__(self): return self.name
+
+
+    pass
+
+
+
+@yaml_object(Y)
+class EventManager(RepresentableObject):
     """Manager for in-game events. Works as follows:
     Listeners subscribe to Events.
     Whenever someone wants to raise an event, they Signal it, and all listeners 
@@ -115,62 +306,62 @@ class EventManager(SecretYamlObject):
 
     yaml_tag = u"!EventManager"
 
-    hidden_fields = ["logger"]
-
-    def __setstate__(self, kw): # For (de)serialization
-        """
-        Keys: listeners (dict), history (HistoryManager)
-        """
-        self.logger = logging.getLogger(__name__)  #normal Python logger
-        self.listeners = kw.get("listeners",{})
-        self.history = kw.get("history",HistoryManager())
-        return
-
     def __init__(self, *args, **kwargs):
         """
         Keys: listeners (dict), history (HistoryManager)
         """
-        self.__setstate__(kwargs)
+        self.logger = logging.getLogger(__name__)  #normal Python logger
+        self.listeners = kwargs.get("listeners",{})
+        self.history = kwargs.get("history",HistoryManager())
         return
 
-    def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
-        res += "listeners=%r, " % self.listeners
-        res += "history=%r" % self.history
-        res += ")" 
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            'listeners':self.listeners,
+            'history':self.history,
+            } )
         return res
 
-    def subscribe(self, event, listener): 
-        """Subscribe @listener to @event. It will be signal()'d with information when it happens."""
-        if event not in self.listeners:
-            self.listeners[event] = []
-        self.listeners[event].append(listener)
-        self.logger.debug("Subscription to: "+str(event)+" by "+str(listener))
+    def subscribe(self, event_type, listener): 
+        """Subscribe @listener to @event (i.e. to a Type). 
+        It will be signal()'d with information when it happens."""
+        if event_type not in self.listeners:
+            self.listeners[event_type] = []
+        self.listeners[event_type].append(listener)
+        self.logger.debug(
+            "Subscription to: "+str(event_type.__name__)
+            +" by "+str(listener)
+            )
         return
 
-    def unsubscribe(self, event, listener): 
+    def unsubscribe(self, event_type, listener): 
         """No longer get signal()'d with regards to @event."""
-        if event in self.listeners:
-            self.listeners[event].remove(listener)
-            if len(self.listeners[event])==0:
-                del(self.listeners[event])
-            self.logger.debug("Unsubscription from: "+str(event)+" by "+str(listener))
+        if event_type in self.listeners:
+            self.listeners[event_type].remove(listener)
+            if len(self.listeners[event_type])==0:
+                del(self.listeners[event_type])
+            self.logger.debug(
+                "Unsubscription from: "+str(event_type.__name__)
+                +" by "+str(listener)
+                )
         return
 
-    def signal(self, event, parameters, notes=""): 
-        """Notify all subscribers of @event by calling signal(@event, @parameters)."""
+    def signal(self, event): 
+        """Notify all subscribers of @event by calling signal(@event),
+        where the Type of the @event determines who will recieve it."""
 
-        self.history.signal(event, parameters, notes)
-        
-        if event in self.listeners:
-            par_str = "{" + "".join([str(key) + " : " + str(parameters[key]) + ", " for key in parameters])[:-2] + "}"
-            #Instead of str(parameters), which gives the __repr__ of the param values...
-            #The "[:-2]" is for removing the trailing ", ". On an empty string, it doesn't matter.
+        self.history.signal(event)
+        event_type = type(event)
 
-            self.logger.debug("Signaling " + str(len(self.listeners[event])) + " with " + str(event) + " : " + par_str)
-            for l in self.listeners[event]:
+        if event_type in self.listeners:
+            self.logger.debug("Signaling " + str(len(self.listeners[event_type])) + " with " + str(event))
+            for l in self.listeners[event_type]:
                 try:
-                    l.signal(event,parameters)
+                    l.signal(event)
                 except:
                     self.logger.exception("Could not signal.")
         else:
@@ -181,94 +372,50 @@ class EventManager(SecretYamlObject):
 
 
 
-class GameEngine(SecretYamlObject):
+
+
+@yaml_object(Y)
+class GameEngine(RepresentableObject):
     """Defines a complete Mafia-like game."""
 
     yaml_tag = u"!GameEngine"
-    #hidden_fields = ["logger"]
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: entities (list), status (dict), phase_iter (iterator)
+        Keys: entity (EntityManager), status (dict), event (EventManager)
         """
-        self.entities = kwargs.get("entities",[])
+        self.entity = kwargs.get("entity",
+                                 EntityManager(
+                                     engine=self,
+                                     name="all_entities"
+                                     )
+                                 )
         self.status = kwargs.get("status",{})
-        self.event = EventManager()        
+        self.event = kwargs.get("event",EventManager())
         return
 
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            'entity':self.entity,
+            'status':self.status,
+            'event':self.event,
+            } )
+        return res
 
     def __repr__(self):
         #Short; Otherwise it just explodes as we get recursive representation.
-        res = "%s(" % (self.__class__.__name__, )
-        #res += "entities=%r, " % self.entities
+        #Even status might be recursive!
+
+        res = "%s(" % self.__class__.__name__
+        #res += "entity=%r, " % self.entity
         #res += "status=%r, " % self.status
         res += ")" 
         return res 
 
-    #TODO: Remove phase property, MAYBE add it dynamically if needed.
-    #@property
-    #def phase(self):
-    #    return self.status["phase"]
-
-    #@phase.setter
-    #def phase(self, q):
-    #    self.status["phase"] = q
-    #    pass
-
-    def entity_by_lambda(self, lamb, always_list=False):
-        """Gets entities for whom $lamb(e) is True"""
-        found_ents = []
-        for e in self.entities:
-            if lamb(e):
-                found_ents.append(e)
-        if always_list or len(found_ents)>1: return found_ents
-        if len(found_ents)==0: return None
-        return found_ents[0] #len==1
-
-
-    def entity_by_name(self, name, always_list=False):
-        """Gets entities whose name is $name."""
-        return self.entity_by_lambda(
-            lambda e: e.name==name, 
-            always_list)
-
-
-    def entity_by_type(self, type, always_list=False):
-        """Gets entities who are instances of $type."""
-        return self.entity_by_lambda(
-            lambda e: isinstance(e, type),
-           always_list)
-    
-
-    def load(self,filename):
-        """Loads an existing game from a file."""
-        #TODO: Implement loading from file.
-        return self
-
-    def load(filename):
-        """Loads an existing game from a file."""
-        #TODO: Implement loading from file.
-        obj = GameEngine()
-        return obj
-
-    def clone(other):
-        """Creates a copy of game "other"."""
-        #TODO: Implement copying
-        obj = GameEngine()
-        return obj
-
-    def clone(self):
-        """Creates a copy of self."""
-        #TODO: Implement copying
-        obj = GameEngine()
-        return obj
-
-    """
-    TODO:
-        status - how to control what goes on? hope callers do everything? :D
-        ???
-
-    """
     pass
 
 

@@ -1,4 +1,10 @@
+
 import sys, os, logging, yaml
+
+"""
+os.chdir("C:\\Users\\anato\\MafiaEngine\\src\\")
+"""
+
 from mafia_engine.base import *
 from mafia_engine.entity import *
 from mafia_engine.ability import *
@@ -54,93 +60,61 @@ def setup(n_town, n_mafia):
     #Add mod object
     mod = TestMod(
         name="Moderator",
-        subscriptions=["vote","mkill",
-                       "phase_change",
-                       "death",
-                       "alignment_eliminated"],
+        subscriptions=[
+            VoteEvent,
+            MKillEvent,
+            PhaseChangeEvent,
+            DeathEvent,
+            AlignmentEliminatedEvent,
+        ],
         phase_iter = PhaseIterator(phases = ["day","night"]),
         )
-    ge.entities.append(mod)
+    ge.entity.members.append(mod)
 
     #Add town team
     tteam = Alignment(name="Town")
-    ge.entities.append(tteam)
+    ge.entity.members.append(tteam)
 
     #Add mafia team
     mteam = MafiaAlignment(name="Mafia")
-    ge.entities.append(mteam)
+    ge.entity.members.append(mteam)
 
     
             
 
     #Add town players
     for i in range(0,n_town):
-        abil_vote = Vote(
-            name = "vote", 
-            restrictions = [
-                PhaseRestriction(name="phase_r", phases=["day"]),
-                TargetRestriction(name="target_r", target_types=[Actor])
-                ]
-        )
-        abils = [ 
-            abil_vote,
-            #Vote(name = "vote", phase = ["day"]),
-            ]
-        trole = Role(
-            name = "townie_role",
-            alignment = tteam,
-            abilities = abils,
-            status = { "alive":True }
-            )
         tplayer = Player(
             name = "Townie" + str(i),
-            roles = [trole],
+            members = [
+                VoteAbility(name = "vote"),
+                ],
+            #status = { "alive":True },
             )
-        ge.entities.append(tplayer)
-        tteam.add(tplayer)
+        tteam.members.append(tplayer)
     #
 
     #Add mafia players
     for i in range(0,n_mafia):
-        #TODO: add abilities
-        abil_vote = Vote(
-            name = "vote", 
-            restrictions = [
-                PhaseRestriction(name="phase_r", phases=["day"]),
-                TargetRestriction(name="target_r", target_types=[Actor])
-                ]
-            )
-        abil_mkill = MKill(
-            name = "mkill", 
-            restrictions = [
-                PhaseRestriction(name="phase_r", phases=["night"]),
-                TargetRestriction(name="target_r", target_types=[Actor])
-                ]
-            )
-        abils = [
-            abil_vote,
-            abil_mkill,
-            #Vote(name = "vote", phase = ["day"]),
-            #MKill(name = "mkill", phase = ["night"]),
-            ]
-        mrole = Role(
-            name = "mafioso_role",
-            alignment = mteam,
-            abilities = abils,
-            status = { "alive":True }
-            )
         mplayer = Player(
             name = "Mafioso" + str(i),
-            roles = [mrole],
+            members = [
+                VoteAbility(name = "vote"),
+                MKillAbility(name = "mkill", alignment=mteam),
+                ],
+            #status = { "alive":True },
             )
-        ge.entities.append(mplayer)
-        mteam.add(mplayer)
+        mteam.members.append(mplayer)
     #
 
     #Add condition checkers
     mchecker = AlignmentEliminationChecker(name="mafia_checker", alignment=mteam)
     tchecker = AlignmentEliminationChecker(name="town_checker", alignment=tteam)
     return ge
+
+def get_alive_actors(ge):
+    lamb = lambda x: isinstance(x, Actor) and not x.status.get("dead",False)
+    return ge.entity.members_by_lambda(lamb,True)
 
 def menu(ge):
     """Looped menu."""
@@ -152,7 +126,7 @@ def menu(ge):
             ln = input("> ")
             if ln.find("list")>=0:
                 print("Phase: " + str(ge.status["phase"]))
-                print([e.name for e in ge.entity_by_type(Actor,True)])
+                print([e.name for e in get_alive_actors(ge)])
             if ln.find("action")>=0:
                 prompt_action(ge)
             if ln.find("phase")>=0:
@@ -169,24 +143,24 @@ def menu(ge):
             if ge.status.get("finished",False):
                 break
         except Exception as e:
-            logger.exception()
+            logger.exception(e)
             pass
     pass
 
 def do_next_phase(ge):
-    mod = ge.entity_by_type(Moderator) #Well, actually TestMod
+    mod = ge.entity.members_by_type(Moderator, True)[0] #Well, actually TestMod
     mod.next_phase()
     pass
 
 
 def prompt_action(ge):
-    names = [e.name for e in ge.entity_by_type(Actor,True)]
+    names = [e.name for e in get_alive_actors(ge)]
     print(names)
     try:
         i_ent = input("Entity (name or index): ")
         try: i_ent = names[int(i_ent)]
         except: pass
-        actor = ge.entity_by_name(i_ent)
+        actor = ge.entity.members_by_name(i_ent, True)[0]
     
         abil_names = actor.get_ability_names()
         if len(abil_names)==1:
@@ -206,7 +180,7 @@ def prompt_action(ge):
         if i_targ=="None": 
             target = None
         else: 
-            target = ge.entity_by_name(i_targ)
+            target = ge.entity.members_by_name(i_targ,True)[0]
 
         try:
             actor.action(ability=i_act, target=target)

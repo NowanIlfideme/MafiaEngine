@@ -1,5 +1,5 @@
 
 __all__ = [
-    "ability","entity","logic",
+    "ability","entity","logic","event"
     #"simple"
     ]
