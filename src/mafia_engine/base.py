@@ -304,6 +304,8 @@ class Action(GameObject):
         self.action(*args, **kwargs)
         pass
 
+    def repr_map(self):
+        return super().repr_map()
 
     pass
 

@@ -34,6 +34,7 @@ class TestMod(Moderator):
 
         res = super().repr_map()
         res.update( { 
+            "vote_tally":self.vote_tally,
             "phase_iter":self.phase_iter,
             } )
         return res

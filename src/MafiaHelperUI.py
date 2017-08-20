@@ -188,6 +188,7 @@ def prompt_action(ge):
             print("Error with ability: " + str(e))
     except Exception as e:
         print("Error while parsing ability: " + str(e))
+        raise
     return
 
 if __name__=="__main__":

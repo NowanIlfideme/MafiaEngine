@@ -86,7 +86,7 @@ class ActivatedAbility(Ability):
         """
         Keys: actor, target
         """
-        act = self.action_type()
+        act = self.action_type(engine=self.engine)
 
         for r in self.restrictions:
             try:

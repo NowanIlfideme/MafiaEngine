@@ -173,6 +173,9 @@ class VoteAction(Action):
                 )
             )
         pass
+
+    def repr_map(self):
+        return super().repr_map()
     pass
 
 @yaml_object(Y)

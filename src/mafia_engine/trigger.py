@@ -72,6 +72,7 @@ class AlignmentEliminationChecker(ConditionChecker):
         res = super().repr_map()
         res.update( {
             "alignment" : self.alignment,
+            "eliminated" : self.eliminated,
             } )
         return res
 
