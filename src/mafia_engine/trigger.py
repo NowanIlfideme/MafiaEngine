@@ -12,32 +12,30 @@ class ConditionChecker(GameObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, update_on, output_event
+        Keys: name, update_on, output_event_type
         """
         super().__init__(self, *args, **kwargs)
         #TODO: Implement
         self.name = kwargs.get("name","")
-        self.output_event = kwargs.get("output_event",None)
+
+        self.output_event_type = kwargs.get("output_event_type",None) 
+        #NOTE: SHOULD BE OBJECT, NOT TYPE
         
         self.update_on = kwargs.get("update_on",[])
 
         for e in self.update_on:
-            self.subscribe(e)
+            self.subscribe(type(e))
 
         pass
 
-    def __str__(self):
-        return "ConditionChecker."+ str(self.name)
+    def repr_map(self):
+        res = super().repr_map()
+        res.update( {
+            "update_on":self.update_on,
+            "output_event_type":self.output_event_type,
+            } )
 
-    def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
-        res += "name=%r, " % self.name
-        res += "update_on=%r, " % self.update_on
-        res += "output_event=%r, " % self.output_event
-        res += "engine=%r" % self.engine        
-        res += ")"
         return res
-
 
     def signal(self, event):
         """Override this event to update status, possibly by getting data from the event."""
@@ -45,6 +43,7 @@ class ConditionChecker(GameObject):
 
     pass
 
+@yaml_object(Y)
 class AlignmentEliminationChecker(ConditionChecker):
     """Checks if an Alignment has been eliminated or not."""
 
@@ -57,29 +56,23 @@ class AlignmentEliminationChecker(ConditionChecker):
         
         # Before the actions are linked, add on "death"
         if "update_on" in kwargs:
-            kwargs["update_on"].append(DeathEvent)
+            kwargs["update_on"].append(DeathEvent())
         else:
-            kwargs["update_on"] = [DeathEvent]
+            kwargs["update_on"] = [DeathEvent()]
             pass
 
         super().__init__(self, *args, **kwargs)
 
         self.alignment = kwargs.get("alignment",None)
-        self.output_event_type = kwargs.get("output_event_type",AlignmentEliminatedEvent)
+        self.output_event_type = kwargs.get("output_event_type",AlignmentEliminatedEvent())
         self.eliminated = False
         pass
 
-    def __str__(self):
-        return "AlignmentEliminationChecker."+ str(self.name)
-
-    def __repr__(self):
-        res = "%s(" % self.__class__.__name__
-        res += "name=%r, " % self.name
-        res += "update_on=%r, " % self.update_on
-        res += "alignment=%r, " % self.alignment
-        res += "output_event_type=%s, " % self.output_event_type.__name__
-        res += "engine=%r" % self.engine
-        res += ")"
+    def repr_map(self):
+        res = super().repr_map()
+        res.update( {
+            "alignment" : self.alignment,
+            } )
         return res
 
 
@@ -97,7 +90,8 @@ class AlignmentEliminationChecker(ConditionChecker):
                     #self.eliminated = False #Don't even have to set it.
                     return
         self.eliminated = True
-        outev = self.output_event_type(alignment=self.alignment)
+        outev_type = type(self.output_event_type)
+        outev = outev_type(alignment=self.alignment)
         self.send_signal(outev)
 
 

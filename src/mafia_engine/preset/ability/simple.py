@@ -48,6 +48,7 @@ class PhaseRestriction(AbilityRestriction):
 
     pass
 
+@yaml_object(Y)
 class MKillPhaseRestriction(PhaseRestriction):
     """Restriction on use phase and once-per-phase."""
     
@@ -98,6 +99,7 @@ class MKillPhaseRestriction(PhaseRestriction):
     pass
 
     
+@yaml_object(Y)
 class TargetRestriction(AbilityRestriction):
     """Restriction on target."""
     
@@ -105,13 +107,19 @@ class TargetRestriction(AbilityRestriction):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: name, target_types (list, default: [Entity]), 
+        Keys: name, target_types (list of OBJECTS, default: [Entity()]), 
             mode="allow" (alt: "ban")
         """
         super().__init__(self, *args, **kwargs)
-        self.target_types = kwargs.get("target_types",[Entity])
+        self.target_types = kwargs.get("target_types",[Entity()])
+        
+        
         self.mode = kwargs.get("mode","allow")
         pass
+
+    @property
+    def _target_types(self):
+        return [type(q) for q in self.target_types]
 
     def __call__(self, abil, *args, **kwargs):
         """Returns True if ability is allowed."""
@@ -123,7 +131,7 @@ class TargetRestriction(AbilityRestriction):
         target = kwargs.get("target",None)
         found = False
         try:
-            for t in self.target_types:
+            for t in self._target_types:
                 if isinstance(target, t):
                     found = True
                     break
@@ -149,6 +157,7 @@ class TargetRestriction(AbilityRestriction):
 
 
 
+@yaml_object(Y)
 class VoteAction(Action):
     """Signals that a player voted for another.
     TODO: Implement a change to the VoteTally instead of doing it there!"""
@@ -166,7 +175,7 @@ class VoteAction(Action):
         pass
     pass
 
-
+@yaml_object(Y)
 class VoteAbility(ActivatedAbility):
     """Classic vote "ability". Phase restriction set at "day" and "actor".
     TODO: Implement."""
@@ -189,7 +198,7 @@ class VoteAbility(ActivatedAbility):
         kwargs["restrictions"].extend(
             [
             PhaseRestriction(name="phase_r", phases=["day"]),
-            TargetRestriction(name="target_r", target_types=[Actor])
+            TargetRestriction(name="target_r", target_types=[Actor()])
             ]
         )
         super().__init__(self, *args, **kwargs)
@@ -208,6 +217,7 @@ class VoteAbility(ActivatedAbility):
         pass
     pass
 
+@yaml_object(Y)
 class MKillAction(Action):
     """Does a mafia kill action.
     TODO: Implement actual action, not just events?"""
@@ -224,6 +234,7 @@ class MKillAction(Action):
         pass
 
 
+@yaml_object(Y)
 class MKillAbility(ActivatedAbility):
     """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
     TODO: Implement."""
@@ -246,7 +257,7 @@ class MKillAbility(ActivatedAbility):
         kwargs["restrictions"].extend(
             [
             MKillPhaseRestriction(name="mkill_phase_r", alignment=m_align, phases=["night"]),
-            TargetRestriction(name="target_r", target_types=[Actor]),
+            TargetRestriction(name="target_r", target_types=[Actor()]),
             ]
         )
 

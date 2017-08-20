@@ -3,8 +3,8 @@ import sys
 
 from ruamel.yaml import YAML, yaml_object
 
-Y = YAML(typ='unsafe', pure=True)
-Y.default_flow_style=False
+Y = YAML(typ='safe', pure=True)
+#Y.default_flow_style=False
 
 @yaml_object(Y)
 class RepresentableObject(object):
@@ -53,10 +53,22 @@ class RepresentableObject(object):
         return res
 
     @classmethod
-    def from_yaml(cls, constructor, node):
+    def bad_from_yaml(cls, constructor, node):
         #TODO: read representation!
-        raise NotImplementedError()
-        return res
+        
+        #instance = cls()
+        #yield instance
+
+        argmap = {}
+        for nv in node.value:
+            attr = nv[0].value
+            obj = constructor.construct_object(nv[1], deep=False)
+            argmap[attr] = obj
+            pass
+        
+        instance = cls(**argmap)
+        return instance
+
     pass
 
 
@@ -78,12 +90,16 @@ class GameObject(RepresentableObject):
         self.engine = kwargs.get("engine", self.default_engine)
         self.name = kwargs.get("name","")
 
-        self.subscriptions = kwargs.get("subscriptions",[])
-        for event in self.subscriptions:
+        to_subscribe = kwargs.get("subscriptions",[])
+        for event in to_subscribe:
             self.subscribe(event)
             pass
 
         return
+
+    @property
+    def subscriptions(self):
+        return self.engine.event.get_subscriptions_of(self)
 
     def repr_map(self):
         """Map to use as representation (to create your self).
@@ -92,7 +108,7 @@ class GameObject(RepresentableObject):
         res = super().repr_map()
         res.update( { 
             'name':self.name,
-            'subscriptions':self.subscriptions,
+            #'subscriptions':self.subscriptions,
             'engine':self.engine,
            } )
         return res
@@ -109,7 +125,11 @@ class GameObject(RepresentableObject):
 
     def subscribe(self, event):
         """Subscribe $self (as listener) to $event."""
-        self.engine.event.subscribe(event,self)
+        try:
+            self.engine.event.subscribe(event,self)
+        except: 
+            print("OOPS")
+            #raise
         pass
 
     def unsubscribe(self, event):
@@ -284,11 +304,6 @@ class Action(GameObject):
         self.action(*args, **kwargs)
         pass
 
-    def __repr__(self):
-        return "TODO: Action representation."
-
-    def __str__(self): return self.name
-
 
     pass
 
@@ -310,10 +325,23 @@ class EventManager(RepresentableObject):
         """
         Keys: listeners (dict), history (HistoryManager)
         """
-        self.logger = logging.getLogger(__name__)  #normal Python logger
-        self.listeners = kwargs.get("listeners",{})
+        self.listeners = kwargs.get("listeners",{}) # event_obj : set(obj)
         self.history = kwargs.get("history",HistoryManager())
         return
+
+    @property
+    def logger(self): #lazily add when needed, also helps not f*** up serialization
+        if not hasattr(self, "_logger"):
+            setattr(self, "_logger", logging.getLogger(__name__))  #normal Python logger
+        return self._logger
+
+    @property
+    def _listeners(self):
+        # returns all types
+        res = {}
+        for k in self.listeners:
+            res[type(k)]=k
+        return res
 
     def repr_map(self):
         """Map to use as representation (to create your self).
@@ -326,12 +354,21 @@ class EventManager(RepresentableObject):
             } )
         return res
 
+    def get_subscriptions_of(self, obj):
+        # Returns the subscriptions of an object, as Types
+        res = [type(k) for k,v in self.listeners.items() if vars==obj]
+        return res
+
     def subscribe(self, event_type, listener): 
         """Subscribe @listener to @event (i.e. to a Type). 
         It will be signal()'d with information when it happens."""
-        if event_type not in self.listeners:
-            self.listeners[event_type] = []
-        self.listeners[event_type].append(listener)
+
+        if event_type not in self._listeners:
+            self.listeners[event_type()] = [] #or set()?
+        e = self._listeners[event_type]
+
+        self.listeners[e].append(listener) #if set(), then add
+
         self.logger.debug(
             "Subscription to: "+str(event_type.__name__)
             +" by "+str(listener)
@@ -340,10 +377,12 @@ class EventManager(RepresentableObject):
 
     def unsubscribe(self, event_type, listener): 
         """No longer get signal()'d with regards to @event."""
-        if event_type in self.listeners:
-            self.listeners[event_type].remove(listener)
-            if len(self.listeners[event_type])==0:
-                del(self.listeners[event_type])
+        if event_type in self._listeners:
+            e = self._listeners[event_type]
+            self.listeners[e].remove(listener)
+            
+            if len(self.listeners[e])==0:
+                del(self.listeners[e])
             self.logger.debug(
                 "Unsubscription from: "+str(event_type.__name__)
                 +" by "+str(listener)
@@ -357,13 +396,16 @@ class EventManager(RepresentableObject):
         self.history.signal(event)
         event_type = type(event)
 
-        if event_type in self.listeners:
-            self.logger.debug("Signaling " + str(len(self.listeners[event_type])) + " with " + str(event))
-            for l in self.listeners[event_type]:
+        if event_type in self._listeners:
+            e = self._listeners[event_type]
+            self.logger.debug("Signaling " + str(len(self.listeners[e])) 
+                              + " with " + str(event))
+            for l in self.listeners[e]:
                 try:
                     l.signal(event)
                 except:
                     self.logger.exception("Could not signal.")
+                    raise
         else:
             self.logger.debug("Event "+str(event)+" happened, but 0 listeners.")
         return
@@ -384,14 +426,14 @@ class GameEngine(RepresentableObject):
         """
         Keys: entity (EntityManager), status (dict), event (EventManager)
         """
+        self.status = kwargs.get("status",{})
+        self.event = kwargs.get("event",EventManager())
         self.entity = kwargs.get("entity",
                                  EntityManager(
                                      engine=self,
                                      name="all_entities"
                                      )
                                  )
-        self.status = kwargs.get("status",{})
-        self.event = kwargs.get("event",EventManager())
         return
 
     def repr_map(self):

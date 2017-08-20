@@ -1,4 +1,5 @@
-import sys, os, logging, yaml
+import sys, os, logging
+import ruamel.yaml
 from mafia_engine.base import Y
 #from mafia_engine.entity import *
 #from mafia_engine.ability import *
@@ -10,7 +11,7 @@ def load_game(fname):
     with open(ffname, 'r') as stream:
         try:
             res = Y.load(stream)
-        except yaml.YAMLError as exc:
+        except ruamel.yaml.YAMLError as exc:
             print(exc)
             return None
     return res

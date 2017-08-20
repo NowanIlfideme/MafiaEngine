@@ -108,14 +108,29 @@ class VoteTally(GameObject):
 
     def __init__(self, *args, **kwargs):
         """
-        Keys: engine
+        Keys: engine, votes, voted
         """
+
+        if "subscriptions" not in kwargs:
+            kwargs["subscriptions"]=[PhaseChangeEvent]
+            #self.subscribe(PhaseChangeEvent)
+        elif PhaseChangeEvent not in kwargs["subscriptions"]:
+            kwargs["subscriptions"].append(PhaseChangeEvent)
+        else: pass
+
         super().__init__(self, *args, **kwargs)
-        self.subscribe(PhaseChangeEvent)
         
-        self.votes = {}
-        self.voted = {}
+        self.votes = kwargs.get("votes",{})
+        self.voted = kwargs.get("voted",{})
         pass
+
+    def repr_map(self):
+        res = super().repr_map()
+        res.update( {
+            "votes":self.votes,
+            "voted":self.voted,
+            } )
+        return res
 
     def add_vote(self, source, target):
         """Changes $source's vote to $target."""
@@ -204,7 +219,7 @@ class PhaseIterator(GameObject):
         super().__init__(self, *args, **kwargs)
         self.phases = kwargs.get("phases",[])
         self.repeat = kwargs.get("repeat",True)
-        self.current = 0
+        self.current = kwargs.get("current",0)
         pass
 
     def __iter__(self): return self
@@ -218,16 +233,13 @@ class PhaseIterator(GameObject):
         self.current += 1
         return res
 
-    def __repr__(self):
-        res = "%s(" % (self.__class__.__name__, )
-        res += "phases=%r, " % self.phases
-        res += "repeat=%r, " % self.repeat
-        res += "current=%r" % self.current
-        res += ")" 
+    def repr_map(self):
+        res = super().repr_map()
+        res.update( {
+            "phases" : self.phases,
+            "repeat" : self.repeat,
+            "current" : self.current
+            })
         return res
-
-    def __str__(self):
-        return "PhaseIterator." + str(self.phases)
-
     pass
 
