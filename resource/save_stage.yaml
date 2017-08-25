@@ -7,7 +7,7 @@ entity: !EntityManager
     members: []
     name: Moderator
     phase_iter: !PhaseIterator
-      current: 2
+      current: 0
       engine: *id001
       name: ''
       phases: [day, night]
@@ -18,7 +18,7 @@ entity: !EntityManager
       name: ''
       voted: {}
       votes: {}
-  - &id013 !Alignment
+  - &id011 !Alignment
     engine: *id001
     members:
     - &id007 !Player
@@ -44,8 +44,13 @@ entity: !EntityManager
             name: ''
             status: {}
       name: Townie0
-      status: {dead: true}
-    - &id009 !Player
+      status: {}
+    name: Town
+    status: {}
+  - &id002 !MafiaAlignment
+    engine: *id001
+    members:
+    - &id010 !Player
       engine: *id001
       members:
       - !VoteAbility
@@ -67,35 +72,6 @@ entity: !EntityManager
             members: []
             name: ''
             status: {}
-      name: Townie1
-      status: {dead: true}
-    name: Town
-    status: {}
-  - &id002 !MafiaAlignment
-    engine: *id001
-    members:
-    - &id012 !Player
-      engine: *id001
-      members:
-      - !VoteAbility
-        engine: *id001
-        name: vote
-        restrictions:
-        - !PhaseRestriction
-          engine: *id001
-          mode: allow
-          name: phase_r
-          phases: [day]
-        - !TargetRestriction
-          engine: *id001
-          mode: allow
-          name: target_r
-          target_types:
-          - &id010 !Actor
-            engine: *id001
-            members: []
-            name: ''
-            status: {}
       - !MKillAbility
         engine: *id001
         name: mkill
@@ -111,7 +87,7 @@ entity: !EntityManager
           mode: allow
           name: target_r
           target_types:
-          - &id011 !Actor
+          - &id009 !Actor
             engine: *id001
             members: []
             name: ''
@@ -119,7 +95,7 @@ entity: !EntityManager
       name: Mafioso0
       status: {}
     name: Mafia
-    status: {mkill_used: false}
+    status: {}
   name: all_entities
   status: {}
 event: !EventManager
@@ -142,8 +118,6 @@ event: !EventManager
       - *id008
       - *id009
       - *id010
-      - *id011
-      - *id012
       - !GameObject
         alignment: *id002
         eliminated: false
@@ -153,8 +127,8 @@ event: !EventManager
         update_on:
         - !DeathEvent {target: null}
       - !GameObject
-        alignment: *id013
-        eliminated: true
+        alignment: *id011
+        eliminated: false
         engine: *id001
         name: town_checker
         output_event_type: !AlignmentEliminatedEvent {alignment: null}
@@ -162,4 +136,4 @@ event: !EventManager
         - !DeathEvent {target: null}
     ? !AlignmentEliminatedEvent {alignment: null}
     : - *id003
-status: {finished: true, phase: night}
+status: {phase: null}

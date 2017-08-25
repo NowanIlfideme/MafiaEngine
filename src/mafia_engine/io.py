@@ -1,5 +1,6 @@
 import sys, os, logging
 import ruamel.yaml
+from ruamel.yaml.compat import StringIO
 from mafia_engine.base import Y
 #from mafia_engine.entity import *
 #from mafia_engine.ability import *
@@ -25,4 +26,22 @@ def dump_game(ge, fname):
     except Exception as e:
         raise e
     return
+
+def round_trip(ge):
+    stream = StringIO()
+    Y.dump(ge, stream)
+    tmp1 = stream.getvalue()
+    
+    ge2 = Y.load(tmp1)
+
+    stream2 = StringIO()
+    Y.dump(ge2, stream2)
+    tmp2 = stream2.getvalue()
+
+    if tmp1==tmp2:
+        print("Round-trip test passed.")
+    else:
+        print("TMP1: \n" + tmp1)
+        print("TMP2: \n" + tmp2)
+    return tmp1==tmp2
 

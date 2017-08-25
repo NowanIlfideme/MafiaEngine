@@ -9,7 +9,7 @@ from mafia_engine.base import *
 from mafia_engine.entity import *
 from mafia_engine.ability import *
 from mafia_engine.trigger import *
-from mafia_engine.io import load_game, dump_game
+from mafia_engine.io import load_game, dump_game, round_trip
 
 #imports simple game mechanics
 from mafia_engine.preset.simple import *
@@ -26,9 +26,13 @@ logging.basicConfig(level=logging.DEBUG) #INFO
 def main(*args):
     """Console test for the mafia engine."""
 
-    fname="./resource/save_stage.yaml" #or "../"?
+    fname="../resource/save_stage.yaml" #or "./"?
 
     q = load_game(fname)
+
+    #temp - roundtrip
+
+
     need_new_game = q is None or q.status.get("finished",False) is True
     if need_new_game:
         print("Previous game already finished or couldn't load.")
@@ -42,6 +46,7 @@ def main(*args):
     else:
         print("Continuing from previous game.")
         ge = q
+    round_trip(ge)
     menu(ge)
 
     #dump
