@@ -1,26 +1,20 @@
-from mafia_engine.base import GameObject, Entity, Y
+from mafia_engine.base import GameObject, Entity, Y, EntityError
 from mafia_engine.ability import *
 from mafia_engine.preset.event.simple import *
 
 from ruamel.yaml import YAML, yaml_object
 
-class EntityError(Exception): """Error with regards to entities."""
-
 
 @yaml_object(Y)
 class Moderator(Entity):
     """Denotes the moderator (the main input point for game logic). Base class."""
-    # NOTE: Inherit and override.
 
     yaml_tag = u"!Moderator"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, subscriptions (list), status (dict)
-        """
-        #NOTE: "members" initializes to []
-        super().__init__(self, *args, **kwargs)
-        #NOTE: Implement own logic.
+    def __init__(self, name="", subscriptions=[], status={}, **kwargs):
+        # No members!
+        super().__init__(name=name, subscriptions=subscriptions,
+                         status=status, members = [], **kwargs)
         pass
 
     def repr_map(self):
@@ -42,11 +36,13 @@ class Alignment(Entity):
 
     yaml_tag = u"!Alignment"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", subscriptions=[], status={},
+                members=[], **kwargs):
         """
         Keys: name, subscriptions (list), status (dict), members (list)
         """
-        super().__init__(self, *args, **kwargs)
+        super().__init__(name=name,subscriptions=subscriptions,
+                        status=status, members=members, **kwargs)
         pass
     
     def repr_map(self):
@@ -68,23 +64,12 @@ class Actor(Entity):
 
     yaml_tag = u"!Actor"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, subscriptions (list), members (list), status (dict)
-        """
-        #Pre-processing
-
-        # Subscribe to own death, maybe?
-        kwargs["subscriptions"] = kwargs.get("subscriptions",[])
-        kwargs["subscriptions"].extend(
-            [
-                DeathEvent,
-            ]
-        )
-        # "members" are the new "roles"
-        
-        super().__init__(self, *args, **kwargs)
-
+    def __init__(self, name="", subscriptions=[], members=[], status={}, **kwargs):
+        subs = subscriptions.copy()
+        if DeathEvent not in subs:
+            subs.append(DeathEvent) # Subscribe to own death, maybe?
+        super().__init__(name=name, subscriptions=subs,
+                         members=members, status=status, **kwargs)
         
         pass
     
@@ -135,12 +120,12 @@ class Actor(Entity):
         #        self.engine.entity.remove(self) #needs to be redone           
         pass
 
-    def action(self, *args, **kwargs):
+    def action(self, ability="", actor=None, **kwargs):
         """Performs an action, specified by the name
         Key: ability, <ability args>
         """
 
-        abil_name = kwargs.get("ability","")
+        abil_name = ability
 
         found_abils = self.members_by_name(abil_name, True)
         found_abils = [a for a in found_abils if isinstance(a, ActivatedAbility)]
@@ -150,8 +135,8 @@ class Actor(Entity):
             exactly. Found: " + str(found_abils))
         fa = found_abils[0]
 
-        kwargs["actor"] = kwargs.get("actor", self)
-        fa.action(*args, **kwargs)
+        if actor is None: actor=self
+        fa.action(actor=actor, **kwargs)
 
         pass
 
@@ -172,11 +157,12 @@ class Player(Actor):
 
     yaml_tag = u"!Player"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", subscriptions=[], status={}, members=[], **kwargs):
         """
         Keys: name, subscriptions, roles, alignment
         """
-        super().__init__(self, *args, **kwargs)
+        super().__init__(name=name, subscriptions=subscriptions,
+                         status=status, members=members, **kwargs)
         #TODO: Implement player-specific stuff
         pass
 
@@ -193,62 +179,3 @@ class Player(Actor):
 
     pass
 
-
-#TODO: Rewrite Role to be Entity-based!
-@yaml_object(Y)
-class Role(GameObject):
-    """Denotes a game role, e.g. "mafioso" or "doctor".
-    Roles consist of:
-        - an Alignment (which determines WinCons (win conditions) and such);
-        - Abilities (which are potential Actions);
-        - Status
-        - TODO: Other stuff (such as ActionPoint restrictions?)
-    """
-    
-    yaml_tag = u"!Role"
-
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, alignment, abilities, status
-        """
-        super().__init__(self, *args, **kwargs)
-        #TODO Add local members.
-        self.name = kwargs.get("name","")
-        self.alignment = kwargs.get("alignment",None)
-        self.abilities = kwargs.get("abilities",[]) # [Ability]
-        self.status = kwargs.get("status",{})       # name : value
-
-        pass
-
-
-    def action(self, *args, **kwargs):
-        """
-        Key: ability, actor, target
-        """
-        
-        #TODO: Find ability within list, check if it's an ActivatedAbility.
-        #If everything checks out, call it.
-
-        ability = kwargs.get("ability","")
-        found_abil = self.find_ability(ability)
-
-        if not isinstance(found_abil, ActivatedAbility):
-            raise AbilityError("Ability " + str(found_abil) + " is not an ActivatedAbility.")
-
-
-        #TODO: Find actor, target.
-        actor = kwargs.get("actor","")
-        target = kwargs.get("target","")
-
-        found_abil.action(ability=found_abil, actor=actor, target=target)
-        pass
-
-    def find_ability(self, ability=""):
-        found_abil = None
-        for a in self.abilities:
-            if a.name==ability:
-                found_abil=a
-        return found_abil
-        
-
-    pass

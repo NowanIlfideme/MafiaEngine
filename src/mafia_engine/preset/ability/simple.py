@@ -4,23 +4,21 @@ from mafia_engine.entity import *
 
 @yaml_object(Y)
 class PhaseRestriction(AbilityRestriction):
-    """Restriction on use phase."""
+    """Restriction on use phase.
+    mode: 'allow' or 'ban'."""
     
     yaml_tag = u"!PhaseRestriction"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, phases (list), mode="allow" (alt: "ban")
-        """
-        super().__init__(self, *args, **kwargs)
-        self.phases = kwargs.get("phases",[])
-        self.mode = kwargs.get("mode","allow")
+    def __init__(self, name="", phases=[], mode="allow", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.phases = phases
+        self.mode = mode
         pass
 
-    def __call__(self, abil, *args, **kwargs):
+    def __call__(self, abil, **kwargs):
         """Returns True if ability is allowed."""
 
-        sup_tst = super().__call__(abil, *args, **kwargs)
+        sup_tst = super().__call__(abil, **kwargs)
         if not sup_tst: return False
 
         #custom code below
@@ -50,37 +48,34 @@ class PhaseRestriction(AbilityRestriction):
 
 @yaml_object(Y)
 class MKillPhaseRestriction(PhaseRestriction):
-    """Restriction on use phase and once-per-phase."""
+    """Restriction on use phase and once-per-phase.
+    mode: 'allow' or 'ban'."""
     
     yaml_tag = u"!MKillPhaseRestriction"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, alignment (Alignment), phases (list), mode="allow" (alt: "ban")
-        """
-        super().__init__(self, *args, **kwargs)
-        self.alignment = kwargs.get("alignment",None)
-        
-        #setup special stuff
-        self.engine.event.subscribe(PhaseChangeEvent,self)
-        self.engine.event.subscribe(MKillEvent,self)
-        self.used = False
+    def __init__(self, name="", alignment=None, phases=[], mode="allow", 
+                    was_used = False, **kwargs):
+        super().__init__(name=name, 
+                         subscriptions = [PhaseChangeEvent, MKillEvent],
+                         phases=phases, mode=mode, **kwargs)
+        self.alignment = alignment
+        self.was_used = was_used
         pass
 
-    def __call__(self, abil, *args, **kwargs):
+    def __call__(self, abil, **kwargs):
         """Returns True if ability is allowed."""
 
-        sup_tst = super().__call__(abil, *args, **kwargs)
+        sup_tst = super().__call__(abil, **kwargs)
         if not sup_tst: return False
 
         #custom code below
-        return not self.used
+        return not self.was_used
 
     def signal(self, event):
         if isinstance(event,PhaseChangeEvent):
-            self.used = False
+            self.was_used = False
         elif isinstance(event, MKillEvent):
-            self.used = True
+            self.was_used = True
         pass
 
     
@@ -93,6 +88,7 @@ class MKillPhaseRestriction(PhaseRestriction):
             "alignment":self.alignment,
             "phases":self.phases,
             "mode":self.mode,
+            "was_used":self.was_used,
             } )
         return res
 
@@ -101,34 +97,36 @@ class MKillPhaseRestriction(PhaseRestriction):
     
 @yaml_object(Y)
 class TargetRestriction(AbilityRestriction):
-    """Restriction on target."""
+    """Restriction on target.
+    mode: 'allow' or 'ban'."""
     
     yaml_tag = u"!TargetRestriction"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, target_types (list of OBJECTS, default: [Entity()]), 
-            mode="allow" (alt: "ban")
-        """
-        super().__init__(self, *args, **kwargs)
-        self.target_types = kwargs.get("target_types",[Entity()])
+    def __init__(self, name="", target_types=[Entity], mode="allow", **kwargs):
+        super().__init__(name="", **kwargs)
+
+        self.target_types = []
+        for tt in target_types:
+            if isinstance(tt, GameObject):
+                self.target_types.append(tt)
+            elif issubclass(tt, GameObject):
+                self.target_types.append(tt())
+            pass
         
-        
-        self.mode = kwargs.get("mode","allow")
+        self.mode = mode
         pass
 
     @property
     def _target_types(self):
         return [type(q) for q in self.target_types]
 
-    def __call__(self, abil, *args, **kwargs):
+    def __call__(self, abil, target=None, **kwargs):
         """Returns True if ability is allowed."""
 
-        sup_tst = super().__call__(abil, *args, **kwargs)
+        sup_tst = super().__call__(abil, target=target, **kwargs)
         if not sup_tst: return False
 
         #custom code below
-        target = kwargs.get("target",None)
         found = False
         try:
             for t in self._target_types:
@@ -148,7 +146,7 @@ class TargetRestriction(AbilityRestriction):
 
         res = super().repr_map()
         res.update( { 
-            "target_types":self.target_types, #NOTE: This might cause problems!
+            "target_types":self.target_types,
             "mode":self.mode,
             } )
         return res
@@ -164,12 +162,12 @@ class VoteAction(Action):
 
     yaml_tag = u"!VoteAction"
 
-    def action(self, *args, **kwargs):
+    def action(self, actor=None, target=None, **kwargs):
         """Just sends a vote event."""
         self.engine.event.signal(
             VoteEvent(
-                actor=kwargs.get("actor",None),
-                target=kwargs.get("target",None),
+                actor=actor,
+                target=target,
                 )
             )
         pass
@@ -189,49 +187,31 @@ class VoteAbility(ActivatedAbility):
     def action_type(self):
         return VoteAction
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", **kwargs):
         """
         Keys: name
         """
-        #TODO: Add data members
-
-
         # Add base restrictions
-        kwargs["restrictions"] = kwargs.get("restrictions",[])
-        kwargs["restrictions"].extend(
-            [
+        restrictions = [
             PhaseRestriction(name="phase_r", phases=["day"]),
-            TargetRestriction(name="target_r", target_types=[Actor()])
-            ]
-        )
-        super().__init__(self, *args, **kwargs)
-
-
-        #
-
+            TargetRestriction(name="target_r", target_types=[Actor])
+        ]
+        super().__init__(name=name, restrictions=restrictions, **kwargs)
         pass
 
-    def action(self, *args, **kwargs):
-        """
-        Keys: actor, target
-        """
-
-        super().action(self, *args, **kwargs)
+    def action(self, actor=None, target=None, **kwargs):
+        super().action(actor=actor, target=target, **kwargs)
         pass
     pass
 
 @yaml_object(Y)
 class MKillAction(Action):
-    """Does a mafia kill action.
-    TODO: Implement actual action, not just events?"""
+    """Does a mafia kill action. (Really, just sends events)."""
     
     yaml_tag = u"!MKillAction"
 
-    def action(self, *args, **kwargs):
+    def action(self, actor=None, target=None, **kwargs):
         """Just sends the requried events."""
-        target = kwargs.get("target", None)
-        actor = kwargs.get("actor", None)
-
         self.send_signal(MKillEvent(actor=actor,target=target))
         self.send_signal(DeathEvent(target=target))
         pass
@@ -239,8 +219,8 @@ class MKillAction(Action):
 
 @yaml_object(Y)
 class MKillAbility(ActivatedAbility):
-    """Classic mafiakill ability. Phase restriction set manually. Only one member can kill. 
-    TODO: Implement."""
+    """Classic mafiakill ability. Phase restriction set manually. 
+    Only one member can kill. """
 
     yaml_tag = "!MKillAbility"
 
@@ -248,31 +228,18 @@ class MKillAbility(ActivatedAbility):
     def action_type(self):
         return MKillAction
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, alignment
-        """
-
+    def __init__(self, name="", alignment=None, **kwargs):
         # Add base restrictions
-        m_align = kwargs.get("alignment", None)
-
-        kwargs["restrictions"] = kwargs.get("restrictions",[])
-        kwargs["restrictions"].extend(
-            [
-            MKillPhaseRestriction(name="mkill_phase_r", alignment=m_align, phases=["night"]),
-            TargetRestriction(name="target_r", target_types=[Actor()]),
-            ]
-        )
-
-        super().__init__(self, *args, **kwargs)
-
+        restrictions= [
+            MKillPhaseRestriction(name="mkill_phase_r", alignment=alignment,
+                                 phases=["night"]),
+            TargetRestriction(name="target_r", target_types=[Actor]),
+        ]
+        super().__init__(name=name, restrictions=restrictions, **kwargs)
         pass
 
-    def action(self, *args, **kwargs):
-        """
-        Keys: actor, target
-        """
-        super().action(self, *args, **kwargs)
+    def action(self, actor=None, target=None,**kwargs):
+        super().action(actor=actor, target=target, **kwargs)
         pass
     pass
 

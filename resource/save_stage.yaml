@@ -7,7 +7,7 @@ entity: !EntityManager
     members: []
     name: Moderator
     phase_iter: !PhaseIterator
-      current: 0
+      current: 1
       engine: *id001
       name: ''
       phases: [day, night]
@@ -18,7 +18,7 @@ entity: !EntityManager
       name: ''
       voted: {}
       votes: {}
-  - &id011 !Alignment
+  - &id013 !Alignment
     engine: *id001
     members:
     - &id007 !Player
@@ -36,7 +36,7 @@ entity: !EntityManager
         - !TargetRestriction
           engine: *id001
           mode: allow
-          name: target_r
+          name: ''
           target_types:
           - &id006 !Actor
             engine: *id001
@@ -45,12 +45,7 @@ entity: !EntityManager
             status: {}
       name: Townie0
       status: {}
-    name: Town
-    status: {}
-  - &id002 !MafiaAlignment
-    engine: *id001
-    members:
-    - &id010 !Player
+    - &id009 !Player
       engine: *id001
       members:
       - !VoteAbility
@@ -65,9 +60,38 @@ entity: !EntityManager
         - !TargetRestriction
           engine: *id001
           mode: allow
-          name: target_r
+          name: ''
           target_types:
           - &id008 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      name: Townie1
+      status: {}
+    name: Town
+    status: {}
+  - &id002 !MafiaAlignment
+    engine: *id001
+    members:
+    - &id012 !Player
+      engine: *id001
+      members:
+      - !VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases: [day]
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id010 !Actor
             engine: *id001
             members: []
             name: ''
@@ -82,12 +106,13 @@ entity: !EntityManager
           mode: allow
           name: mkill_phase_r
           phases: [night]
+          was_used: false
         - !TargetRestriction
           engine: *id001
           mode: allow
-          name: target_r
+          name: ''
           target_types:
-          - &id009 !Actor
+          - &id011 !Actor
             engine: *id001
             members: []
             name: ''
@@ -95,12 +120,11 @@ entity: !EntityManager
       name: Mafioso0
       status: {}
     name: Mafia
-    status: {}
+    status: {mkill_used: false}
   name: all_entities
   status: {}
 event: !EventManager
-  history: !HistoryManager {}
-  listeners:
+  _listeners:
     ? !VoteEvent {actor: null, target: null}
     : - *id003
     ? !MKillEvent {actor: null, target: null}
@@ -118,22 +142,21 @@ event: !EventManager
       - *id008
       - *id009
       - *id010
+      - *id011
+      - *id012
       - !GameObject
         alignment: *id002
         eliminated: false
         engine: *id001
         name: mafia_checker
         output_event_type: !AlignmentEliminatedEvent {alignment: null}
-        update_on:
-        - !DeathEvent {target: null}
       - !GameObject
-        alignment: *id011
+        alignment: *id013
         eliminated: false
         engine: *id001
         name: town_checker
         output_event_type: !AlignmentEliminatedEvent {alignment: null}
-        update_on:
-        - !DeathEvent {target: null}
     ? !AlignmentEliminatedEvent {alignment: null}
     : - *id003
-status: {phase: null}
+  history: !HistoryManager {}
+status: {phase: day}

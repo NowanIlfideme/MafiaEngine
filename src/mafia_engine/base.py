@@ -1,4 +1,5 @@
 import logging
+import warnings
 import sys
 
 from ruamel.yaml import YAML, yaml_object
@@ -6,10 +7,26 @@ from ruamel.yaml import YAML, yaml_object
 Y = YAML(typ='safe', pure=True)
 #Y.default_flow_style=False
 
+
+##############################
+###   BASE  CLASSES
+##############################
+
+class MafiaException(Exception): """Base class for MafiaEngine errors."""
+class EntityError(MafiaException): """Error with regards to entities."""
+class EventError(MafiaException): """Error with regards to events."""
+class AbilityError(MafiaException): """Something wrong with an ability."""
+
+
 @yaml_object(Y)
 class RepresentableObject(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        # Shouldn't have any kwargs
+        if len(kwargs)>0: 
+            warnings.warn(
+                "YamlableObject got unused kwargs: %s" 
+                % str(kwargs), stacklevel=2)
         pass
 
     def repr_map(self):
@@ -32,14 +49,10 @@ class RepresentableObject(object):
         res += ")" 
         return res
     
-    @classmethod
-    def to_yaml(cls, representer, node):
-        return representer.represent_mapping(cls.yaml_tag,
-            node.repr_map())
     
     @classmethod
     def from_repr(cls, txt):
-
+        # NOTE: Doesn't work. Sorry.
         txt = node.value
         cls_name, raw_args = txt.split('(',1)
         raw_args = raw_args.rsplit(')',1)[0]
@@ -52,46 +65,44 @@ class RepresentableObject(object):
         res = cls(**kwargs)
         return res
 
-    @classmethod
-    def bad_from_yaml(cls, constructor, node):
-        #TODO: read representation!
-        
-        #instance = cls()
-        #yield instance
-
-        argmap = {}
-        for nv in node.value:
-            attr = nv[0].value
-            obj = constructor.construct_object(nv[1], deep=False)
-            argmap[attr] = obj
-            pass
-        
-        instance = cls(**argmap)
-        return instance
 
     pass
 
+@yaml_object(Y)
+class YamlableObject(RepresentableObject):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        pass
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        return representer.represent_mapping(cls.yaml_tag,
+            node.repr_map())
+    
+    pass
 
 
 @yaml_object(Y)
-class GameObject(RepresentableObject):
+class GameObject(YamlableObject):
     """Defines a game object. This helps in finding the object's environment 
     (i.e. the current game, symbolized by a GameEngine reference).
     Through that, it can find the EventManager, other GameObjects, etc."""
 
     yaml_tag = u"!GameObject"
-    #hidden_fields = []
     default_engine = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, engine=None, name="", subscriptions=[], **kwargs):
         """
         Keys: engine, name, subscriptions
         """
-        self.engine = kwargs.get("engine", self.default_engine)
-        self.name = kwargs.get("name","")
+        super().__init__(**kwargs)
+        self.engine = self.default_engine if (engine is None) else engine
+        self.name = name
 
-        to_subscribe = kwargs.get("subscriptions",[])
-        for event in to_subscribe:
+        # subscriptions are immediately handled by the event handler,
+        # so we don't save them in this object.
+        for event in subscriptions: 
             self.subscribe(event)
             pass
 
@@ -108,14 +119,13 @@ class GameObject(RepresentableObject):
         res = super().repr_map()
         res.update( { 
             'name':self.name,
-            #'subscriptions':self.subscriptions,
             'engine':self.engine,
            } )
         return res
 
 
     def signal(self, event):
-        """Signals $self that $event happened.
+        """Event manager signals $self that $event happened.
         Override this."""
         pass
 
@@ -125,11 +135,7 @@ class GameObject(RepresentableObject):
 
     def subscribe(self, event):
         """Subscribe $self (as listener) to $event."""
-        try:
-            self.engine.event.subscribe(event,self)
-        except: 
-            print("OOPS")
-            #raise
+        self.engine.event.subscribe(event,self)
         pass
 
     def unsubscribe(self, event):
@@ -141,39 +147,17 @@ class GameObject(RepresentableObject):
 
 @yaml_object(Y)
 class ProxyObject(GameObject): 
-    """Base class for temporary/use objects."""
-    # TODO: Implement!
+    """Base class for temporary-use objects."""
+
+    yaml_tag=u"ProxyObject"
+    # TODO: Implement! When they become required.
     pass
 
 
-@yaml_object(Y)
-class HistoryManager(RepresentableObject):
-    """Saves all events in chronological and searchable order.
-    TODO: Implement!
-    """
 
-    yaml_tag = u"!HistoryManager"
-
-    def __init__(self, *args, **kwargs):
-        """Keys: <none>"""
-        pass
-
-    def __str__(self): return "HistoryManager"
-
-    def repr_map(self):
-        """Map to use as representation (to create your self).
-        Override or extend this for each child!"""
-
-        res = super().repr_map()
-        res.update( { } )
-        return res
-
-    def signal(self, event):
-        """Saves an event to history. TODO: Implement."""
-        pass
-
-    pass
-
+##############################
+###   ENTITY
+##############################
 
 @yaml_object(Y)
 class Entity(GameObject):
@@ -181,21 +165,17 @@ class Entity(GameObject):
 
     yaml_tag = u"!Entity"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, subscriptions (list), status (dict), members (list)
-        """
-
-        super().__init__(self, *args, **kwargs)
-
-        #Note: subscriptions handled in GameObject
-        self.status = kwargs.get("status",{})
-        self.members = kwargs.get("members",[])
+    def __init__(self, name="", subscriptions=[], status={}, members=[], 
+                 engine=None, **kwargs):
+        super().__init__(name=name, subscriptions=subscriptions, 
+                         engine=engine, **kwargs)
+        self.status = status.copy()
+        self.members = members.copy()
         pass
 
     def signal(self, event):
-        """Gets called when subscribed to other events."""
-        pass # Override.
+        """Gets called when subscribed to other events. Override this!"""
+        pass
 
     def repr_map(self):
         """Map to use as representation (to create your self).
@@ -208,7 +188,8 @@ class Entity(GameObject):
             } )
         return res
 
-    # Work with members:
+
+    # Helper functions for working with members:
 
     def members_by_lambda(self, lamb, recursive = False):
         """Gets members for whom $lamb(e) is True"""
@@ -255,10 +236,13 @@ class EntityManager(Entity):
 
 
 
+##############################
+###   EVENT and ACTION
+##############################
 
 
-#@yaml_object(Y)
-class Event(object):
+@yaml_object(Y)
+class Event(RepresentableObject):
     """In-game event. 'interface' represents arguments 
     that will be added to definition, along with their
     default values. Base class."""
@@ -266,10 +250,13 @@ class Event(object):
     yaml_tag = u"!Event"
     interface = {} # name:"<empty event>" }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
         for att in self.interface:
             setattr(self, att, kwargs.get(att,self.interface[att]))
+        not_used = {q:v for q,v in kwargs.items() if q not in self.interface}
+        if len(not_used)>0:
+            warnings.warn("Arguments not in interface: %s" % (not_used,))
         # Extend or override for own behavior
         pass
 
@@ -279,29 +266,28 @@ class Event(object):
 
         res = super().repr_map()
         res.update( { 
-            'interface':self.interface,
+            #'interface':self.interface,
             } )
         return res
 
     pass
-
 
 @yaml_object(Y)
 class Action(GameObject):
     """In-game action, with automatic event handling.
     Actions are working types. Base class."""
 
-    def action(self, *args, **kwargs):
+    def action(self, **kwargs):
         """Active portion of the class. Override this!"""
         self.engine.event.signal(
             Event(name="Dummy action with args: %s" % kwargs)
             )
         pass
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
         """Performs the Action. 
         Given as convenience - do not override!"""
-        self.action(*args, **kwargs)
+        self.action(**kwargs)
         pass
 
     def repr_map(self):
@@ -311,8 +297,40 @@ class Action(GameObject):
 
 
 
+##############################
+###   GAME ENGINE
+##############################
+
 @yaml_object(Y)
-class EventManager(RepresentableObject):
+class HistoryManager(YamlableObject):
+    """Saves all events in chronological and searchable order.
+    TODO: Implement!
+    """
+
+    yaml_tag = u"!HistoryManager"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        pass
+
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { } )
+        return res
+
+    def signal(self, event):
+        """Saves an event to history. TODO: Implement."""
+        pass
+
+    pass
+
+
+
+@yaml_object(Y)
+class EventManager(YamlableObject):
     """Manager for in-game events. Works as follows:
     Listeners subscribe to Events.
     Whenever someone wants to raise an event, they Signal it, and all listeners 
@@ -321,29 +339,36 @@ class EventManager(RepresentableObject):
     History allows one to resume a game from a particular state.
     """
 
+    _implementation_details = """
+    self._listeners is a map of: event_object : set(listener_obj)
+    self.listeners is a property, where
+        getter returns map of: event_type : set(listener_obj)
+        setter is non-existent
+    """
+
     yaml_tag = u"!EventManager"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: listeners (dict), history (HistoryManager)
-        """
-        self.listeners = kwargs.get("listeners",{}) # event_obj : set(obj)
-        self.history = kwargs.get("history",HistoryManager())
+    def __init__(self, listeners={}, _listeners={}, history=None):
+        self._listeners = {} # event : set(obj)
+        for k, v in listeners.items(): self.subscribe(v,k)
+        for k, v in _listeners.items(): self.subscribe(v,k)
+        self.history = HistoryManager() if (history is None) else history
         return
 
     @property
     def logger(self): #lazily add when needed, also helps not f*** up serialization
         if not hasattr(self, "_logger"):
-            setattr(self, "_logger", logging.getLogger(__name__))  #normal Python logger
+            setattr(self, "_logger", logging.getLogger(__name__))
         return self._logger
 
     @property
-    def _listeners(self):
-        # returns all types
+    def listeners(self):
+        # returns dict of: type:set(listener_obj)
         res = {}
-        for k in self.listeners:
-            res[type(k)]=k
+        for k, v in self._listeners.items():
+            res[type(k)]=v
         return res
+
 
     def repr_map(self):
         """Map to use as representation (to create your self).
@@ -351,44 +376,60 @@ class EventManager(RepresentableObject):
 
         res = super().repr_map()
         res.update( { 
-            'listeners':self.listeners,
+            '_listeners':self._listeners,
             'history':self.history,
             } )
         return res
 
     def get_subscriptions_of(self, obj):
         # Returns the subscriptions of an object, as Types
-        res = [type(k) for k,v in self.listeners.items() if vars==obj]
+        res = [k for k,v in self.listeners.items() if (obj in v)]
         return res
 
-    def subscribe(self, event_type, listener): 
-        """Subscribe @listener to @event (i.e. to a Type). 
+    def _find_evO(self, event):
+        """Find event_obj from $event"""
+        if isinstance(event,Event): return self._find_evO(type(event))
+        found_ev_obj = None
+        for k in self._listeners: # find event in keys
+            if type(k) is event:
+                found_ev_obj = k
+                break            
+        return found_ev_obj
+
+    def subscribe(self, event, listener): 
+        """Subscribe @listener to @event (or, if it's an object, to its Type). 
         It will be signal()'d with information when it happens."""
 
-        if event_type not in self._listeners:
-            self.listeners[event_type()] = [] #or set()?
-        e = self._listeners[event_type]
+        if isinstance(event, Event): # event is an Object
+            return self.subscribe(type(event), listener)
 
-        self.listeners[e].append(listener) #if set(), then add
+        if issubclass(event, Event): # event is a Type
+            ev_obj = self._find_evO(event)
+            if ev_obj is None: # not found, make new one
+                ev_obj = event()
+                self._listeners[ev_obj] = [listener]
+                pass
+            elif listener in self._listeners[ev_obj]: #already inside
+                return
+            else:
+                self._listeners[ev_obj].append(listener)
+        else:
+            raise EventError("Attempted to subscribe to a non-Event.")
 
-        self.logger.debug(
-            "Subscription to: "+str(event_type.__name__)
-            +" by "+str(listener)
-            )
+        if str(listener)=="Actor.":
+            print("WAT")
+        self.logger.debug("Subscription to %s by %s " % (event.__name__, listener) )
         return
 
-    def unsubscribe(self, event_type, listener): 
+    def unsubscribe(self, event, listener): 
         """No longer get signal()'d with regards to @event."""
-        if event_type in self._listeners:
-            e = self._listeners[event_type]
-            self.listeners[e].remove(listener)
-            
-            if len(self.listeners[e])==0:
-                del(self.listeners[e])
-            self.logger.debug(
-                "Unsubscription from: "+str(event_type.__name__)
-                +" by "+str(listener)
-                )
+
+        ev_obj = self._find_evO(event)
+
+        if ev_obj is not None and listener in self._listeners[ev_obj]: #in listeners
+            self._listeners[ev_obj].remove(listener)
+            self.logger.debug("Unsubscription from %s by %s " 
+                              % (event_type.__name__, listener) )
         return
 
     def signal(self, event): 
@@ -396,20 +437,20 @@ class EventManager(RepresentableObject):
         where the Type of the @event determines who will recieve it."""
 
         self.history.signal(event)
-        event_type = type(event)
-
-        if event_type in self._listeners:
-            e = self._listeners[event_type]
-            self.logger.debug("Signaling " + str(len(self.listeners[e])) 
-                              + " with " + str(event))
-            for l in self.listeners[e]:
-                try:
-                    l.signal(event)
+        ev_obj = self._find_evO(event)
+        if ev_obj is None: e_set = set()
+        else: e_set = self._listeners[ev_obj]
+            
+        if len(e_set)==0:
+            self.logger.debug("Event happened, but 0 listeners: %s" % (event) )
+        else:
+            self.logger.debug("Signaling %s with %s" % 
+                                (len(e_set), event) )
+            for l in e_set:
+                try: l.signal(event)
                 except:
                     self.logger.exception("Could not signal.")
                     raise
-        else:
-            self.logger.debug("Event "+str(event)+" happened, but 0 listeners.")
         return
 
     pass
@@ -419,23 +460,22 @@ class EventManager(RepresentableObject):
 
 
 @yaml_object(Y)
-class GameEngine(RepresentableObject):
+class GameEngine(YamlableObject):
     """Defines a complete Mafia-like game."""
 
     yaml_tag = u"!GameEngine"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, status={}, event=None, entity=None, **kwargs):
         """
         Keys: entity (EntityManager), status (dict), event (EventManager)
         """
-        self.status = kwargs.get("status",{})
-        self.event = kwargs.get("event",EventManager())
-        self.entity = kwargs.get("entity",
-                                 EntityManager(
-                                     engine=self,
-                                     name="all_entities"
-                                     )
-                                 )
+        super().__init__(**kwargs)
+        self.status = status
+        self.event = EventManager() if (event is None) else event
+        if entity is None:
+            self.entity = EntityManager(
+                engine=self, name="all_entities" )
+        else: self.entity = entity
         return
 
     def repr_map(self):
@@ -451,14 +491,7 @@ class GameEngine(RepresentableObject):
         return res
 
     def __repr__(self):
-        #Short; Otherwise it just explodes as we get recursive representation.
-        #Even status might be recursive!
-
-        res = "%s(" % self.__class__.__name__
-        #res += "entity=%r, " % self.entity
-        #res += "status=%r, " % self.status
-        res += ")" 
-        return res 
+        return "%s(...)" % self.__class__.__name__
 
     pass
 

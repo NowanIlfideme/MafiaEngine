@@ -1,8 +1,6 @@
-from mafia_engine.base import GameObject, Action, Y
+from mafia_engine.base import GameObject, Action, Y, AbilityError
 
 from ruamel.yaml import YAML, yaml_object
-
-class AbilityError(Exception): """Something wrong with an ability."""
 
 @yaml_object(Y)
 class AbilityRestriction(GameObject): # TODO: DEPRECATED Remove.
@@ -11,19 +9,19 @@ class AbilityRestriction(GameObject): # TODO: DEPRECATED Remove.
 
     yaml_tag = u"!AbilityRestriction"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,  **kwargs):
         """
         Keys: name
         """
-        super().__init__(self, *args, **kwargs)
+        super().__init__(**kwargs)
         pass
 
-    def __call__(self, abil, *args, **kwargs):
+    def __call__(self, abil, **kwargs):
         """Override this! Return True if you allow. 
         In case of argument error, Raise AbilityError.
         Make sure to call the super's method."""
 
-        #super().__call__(abil, *args, **kwargs) #ONLY for descendants
+        #super().__call__(abil, **kwargs) #ONLY for descendants
         if not isinstance(abil, Ability):
             raise AbilityError("Wrong type. 'abil' should be 'self'. \
 Exptected Ability, recieved " + str(abil.__class__.__name__))
@@ -38,12 +36,11 @@ class Ability(GameObject):
     This is a base type for Activated and Automatic abilities
     (akin to Magic: The Gathering's system). """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", **kwargs):
         """
         Keys: name
         """
-        super().__init__(self, *args, **kwargs)
-        self.name = kwargs.get("name","")
+        super().__init__(name=name, **kwargs)
         #TODO: Add data memebers
 
         pass
@@ -70,44 +67,23 @@ class ActivatedAbility(Ability):
     """Ability that gets activated by an Entity.
     This (usually) generates an Action and Event when used."""
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, action_type (Type), restrictions (list of function - deprecated?)
-        where functions are of form restriction(ActivatedAbility, *args, **kwargs)
-        and throw AbilityError if failed
-        """
-        super().__init__(self, *args, **kwargs)
-
-        self.restrictions = kwargs.get("restrictions",[])
+    def __init__(self, restrictions=[], **kwargs):
+        super().__init__(**kwargs)
+        self.restrictions = restrictions
         pass
-
     
-    def action(self, *args, **kwargs):
-        """
-        Keys: actor, target
-        """
+    def action(self, **kwargs):
         act = self.action_type(engine=self.engine)
 
         for r in self.restrictions:
             try:
-                if not r(self, *args, **kwargs): 
+                if not r(self, **kwargs): 
                     #If we fail even one restriction, we must return
                     raise AbilityError("Abilitiy failed due to restriction: %s." % r) #For debuggingg
                     return #TODO: Add return value from actions?
             except AbilityError as e:
-                raise #for debugging; in real life, you'd want to return
-    
-        
-        act(*args,**kwargs)
-
-        # NOTE: No need to signal, Action does it for you.
-        #target = kwargs.get("target", None)
-        #actor = kwargs.get("actor", None)
-        #self.send_signal(self.name,
-        #                 parameters = {
-        #                     "actor":actor,
-        #                     "target":target}
-        #                 )
+                raise #for debugging; in real life, you'd want to return       
+        act(**kwargs)
         pass
     
     def repr_map(self):
@@ -127,10 +103,10 @@ class AutomaticAbility(Ability):
     """Ability that triggers from an Event.
     This might generate a new Action + Event."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+    def __init__(self, name="", **kwargs):
+        super().__init__(name=name, **kwargs)
         """
-        Keys: name, action
+        Keys: name
         """
         #TODO: Add data members
         #TODO: Add triggers! Implement.

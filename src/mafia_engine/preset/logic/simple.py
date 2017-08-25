@@ -3,126 +3,18 @@ from mafia_engine.entity import *
 from mafia_engine.preset.event.simple import *
 
 @yaml_object(Y)
-class TestMod(Moderator):
-    """Example moderator. Handles game logic."""
-
-    yaml_tag = u"!TestMod"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-        self.vote_tally = VoteTally()
-        self.phase_iter = kwargs.get("phase_iter",PhaseIterator())
-        pass
-
-    def next_phase(self):
-        """Goes to next phase, and signals a 'phase_change'"""
-
-        old_phase = self.engine.status["phase"]
-        new_phase = next(self.phase_iter)
-
-        self.engine.status["phase"] = new_phase
-        self.engine.event.signal(
-            PhaseChangeEvent(previous=old_phase,current=new_phase)
-            )
-
-        pass
-
-    
-    def repr_map(self):
-        """Map to use as representation (to create your self).
-        Override or extend this for each child!"""
-
-        res = super().repr_map()
-        res.update( { 
-            "vote_tally":self.vote_tally,
-            "phase_iter":self.phase_iter,
-            } )
-        return res
-
-
-    def signal(self, event):
-
-        #Get info
-        prefix = "-> "
-
-        #TODO: Fix to actually work with new-style events!
-
-        """
-        if "target" in parameters:
-            real_target = parameters["target"]
-            try: target = real_target.name
-            except: target = str(real_target)
-        else: target = "<unknown>"
-
-        if "actor" in parameters:
-            real_actor = parameters["actor"]
-            try: actor = real_actor.name
-            except: actor = str(real_actor)
-        else: actor = "<unknown>"
-
-        if "alignment" in parameters:
-            real_alignment = parameters["alignment"]
-            try: alignment = real_alignment.name
-            except: alignment = str(real_alignment)
-        else: alignment = "<unknown>"            
-
-        """
-
-        #Get message
-
-        #TODO: Change for the type!
-
-        if isinstance(event, VoteEvent): 
-            print(prefix + event.actor.name + " voted for " + event.target.name + "!")
-            self.vote_tally.add_vote(event.actor, event.target)
-            pass
-
-        if isinstance(event, PhaseChangeEvent):
-            print(prefix + "Phase changed, now: " + self.engine.status["phase"])
-            pass
-
-        if isinstance(event, MKillEvent): 
-            print(prefix + event.actor.name + " used mkill on " + event.target.name + "!")
-            pass
-
-        if isinstance(event, DeathEvent):
-            print(prefix + event.target.name + " died!")
-            pass
-
-        if isinstance(event, AlignmentEliminatedEvent):
-            print(prefix + event.alignment.name + " was eliminated!")
-            #TODO: Game-end behavior, for the simple game!
-            tmp = self.engine.entity.members_by_type(Alignment, True)
-            tmp.remove(event.alignment)
-            print(prefix + tmp[0].name + " has won!")
-            self.engine.status["finished"]=True
-            pass
-
-        pass
-    pass
-
-@yaml_object(Y)
 class VoteTally(GameObject):
     """Holds the voting tally for the day."""
     
     yaml_tag = u"!VoteTally"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: engine, votes, voted
-        """
-
-        if "subscriptions" not in kwargs:
-            kwargs["subscriptions"]=[PhaseChangeEvent]
-            #self.subscribe(PhaseChangeEvent)
-        elif PhaseChangeEvent not in kwargs["subscriptions"]:
-            kwargs["subscriptions"].append(PhaseChangeEvent)
-        else: pass
-
-        super().__init__(self, *args, **kwargs)
-        
-        self.votes = kwargs.get("votes",{})
-        self.voted = kwargs.get("voted",{})
+    def __init__(self, name="", subscriptions=[], votes={}, voted={}, **kwargs):
+        subs = subscriptions.copy()
+        if PhaseChangeEvent not in subs:
+            subs.append(PhaseChangeEvent)
+        super().__init__(name=name, subscriptions=subs, **kwargs)        
+        self.votes = votes
+        self.voted = voted
         pass
 
     def repr_map(self):
@@ -208,19 +100,89 @@ class VoteTally(GameObject):
     pass
 
 @yaml_object(Y)
+class TestMod(Moderator):
+    """Example moderator. Handles game logic."""
+
+    yaml_tag = u"!TestMod"
+
+    def __init__(self, name="", vote_tally=None, phase_iter=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.vote_tally = VoteTally() if (vote_tally is None) else vote_tally
+        self.phase_iter = PhaseIterator() if (phase_iter is None) else phase_iter
+        pass
+
+    def next_phase(self):
+        """Goes to next phase, and signals a 'phase_change'"""
+
+        old_phase = self.engine.status["phase"]
+        new_phase = next(self.phase_iter)
+
+        self.engine.status["phase"] = new_phase
+        self.engine.event.signal(
+            PhaseChangeEvent(previous=old_phase,current=new_phase)
+            )
+
+        pass
+
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            "vote_tally":self.vote_tally,
+            "phase_iter":self.phase_iter,
+            } )
+        return res
+
+
+    def signal(self, event):
+
+        #Get info
+        prefix = "-> "
+
+        #Get message
+        if isinstance(event, VoteEvent): 
+            print("%s%s voted for %s!" % (prefix, event.actor.name, event.target.name) )
+            self.vote_tally.add_vote(event.actor, event.target)
+            pass
+
+        if isinstance(event, PhaseChangeEvent):
+            print("%sPhase changed, now: %s" % (prefix, self.engine.status["phase"]) )
+            pass
+
+        if isinstance(event, MKillEvent): 
+            print("%s%s used mkill on %s!" % (prefix, event.actor.name, event.target.name) )
+            pass
+
+        if isinstance(event, DeathEvent):
+            print("%s%s died!" % (prefix, event.target.name) )
+            pass
+
+        if isinstance(event, AlignmentEliminatedEvent):
+            print("%s%s was eliminated!" % (prefix, event.alignment.name) )
+            #TODO: Game-end behavior, for the simple game!
+            tmp = self.engine.entity.members_by_type(Alignment, True)
+            tmp.remove(event.alignment)
+            print("%s%s has won!" % (prefix, tmp[0].name) )
+            self.engine.status["finished"]=True
+            pass
+
+        pass
+    pass
+
+
+@yaml_object(Y)
 class PhaseIterator(GameObject):
     """Iterates over the phases sequentially."""
 
     yaml_tag = u"!PhaseIterator"
 
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, phases, repeat
-        """
-        super().__init__(self, *args, **kwargs)
-        self.phases = kwargs.get("phases",[])
-        self.repeat = kwargs.get("repeat",True)
-        self.current = kwargs.get("current",0)
+    def __init__(self, name="", phases=[], repeat=True, current=0, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.phases = phases
+        self.repeat = repeat
+        self.current = current
         pass
 
     def __iter__(self): return self

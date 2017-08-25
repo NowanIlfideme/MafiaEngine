@@ -8,30 +8,21 @@ from ruamel.yaml import YAML, yaml_object
 class ConditionChecker(GameObject):
     """Checks if a condition is met, and if so triggers another event."""
     
-    #TODO: IMPLEMENT!
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", output_event_type=None, 
+                 subscriptions=[], **kwargs):
         """
         Keys: name, update_on, output_event_type
         """
-        super().__init__(self, *args, **kwargs)
-        #TODO: Implement
-        self.name = kwargs.get("name","")
+        super().__init__(name=name, subscriptions=subscriptions, **kwargs)
 
-        self.output_event_type = kwargs.get("output_event_type",None) 
+        self.output_event_type = output_event_type
         #NOTE: SHOULD BE OBJECT, NOT TYPE
         
-        self.update_on = kwargs.get("update_on",[])
-
-        for e in self.update_on:
-            self.subscribe(type(e))
-
         pass
 
     def repr_map(self):
         res = super().repr_map()
         res.update( {
-            "update_on":self.update_on,
             "output_event_type":self.output_event_type,
             } )
 
@@ -47,25 +38,11 @@ class ConditionChecker(GameObject):
 class AlignmentEliminationChecker(ConditionChecker):
     """Checks if an Alignment has been eliminated or not."""
 
-    #TODO: IMPLEMENT!
-
-    def __init__(self, *args, **kwargs):
-        """
-        Keys: name, update_on, output_event_type, alignment
-        """
-        
-        # Before the actions are linked, add on "death"
-        if "update_on" in kwargs:
-            kwargs["update_on"].append(DeathEvent())
-        else:
-            kwargs["update_on"] = [DeathEvent()]
-            pass
-
-        super().__init__(self, *args, **kwargs)
-
-        self.alignment = kwargs.get("alignment",None)
-        self.output_event_type = kwargs.get("output_event_type",AlignmentEliminatedEvent())
-        self.eliminated = False
+    def __init__(self, name="", alignment=None, eliminated = False, **kwargs):
+        super().__init__(name=name, subscriptions = [DeathEvent],
+                         output_event_type=AlignmentEliminatedEvent(), **kwargs)
+        self.alignment = alignment
+        self.eliminated = eliminated
         pass
 
     def repr_map(self):
@@ -82,9 +59,8 @@ class AlignmentEliminationChecker(ConditionChecker):
         Checks whether the alignment has members left."""
         
         if self.eliminated: return
-
         if len(self.alignment.members)==0:
-            pass
+            pass #eliminated
         else:
             for member in self.alignment.members:
                 if not member.status.get("dead",False):

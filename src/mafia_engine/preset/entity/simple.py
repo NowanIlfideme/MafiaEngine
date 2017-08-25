@@ -9,18 +9,14 @@ class MafiaAlignment(Alignment):
 
     yaml_tag = u"!MafiaAlignment"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name="", subscriptions=[], status={}, **kwargs):
         """
         Keys: name, subscriptions (list), status (dict)
         """
-
-        if "subscriptions" in kwargs:
-            if PhaseChangeEvent not in kwargs["subscriptions"]:
-                kwargs["subscriptions"].append(PhaseChangeEvent)
-        else: kwargs["subscriptions"] = [PhaseChangeEvent]
-
-        super().__init__(self, *args, **kwargs)
-        #TODO: Implement
+        if PhaseChangeEvent not in subscriptions:
+            subscriptions.append(PhaseChangeEvent)
+        super().__init__(name=name, subscriptions=subscriptions, 
+                         status=status, **kwargs)
         pass
     
     def signal(self, event):
