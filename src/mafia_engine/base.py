@@ -297,6 +297,43 @@ class Action(GameObject):
 
 
 
+@yaml_object(Y)
+class ActionEvent(Event):
+    """Event, caused by Action, with a link to said Action. """
+
+    yaml_tag = u"!ActionEvent"
+    interface = {'action':Action()}
+
+    def __init__(self, action=Action(), **kwargs):
+        super().__init__(action=action, **kwargs) #sets attributes
+        pass
+    pass
+
+@yaml_object(Y)
+class PreActionEvent(ActionEvent):
+    """ActionEvent that signifies the Action is about to occur. """
+    yaml_tag = u"!PreActionEvent"
+    pass
+
+@yaml_object(Y)
+class PostActionEvent(ActionEvent):
+    """ActionEvent that signifies that Action has already occured."""
+    yaml_tag = u"!PostActionEvent"
+    pass
+
+@yaml_object(Y)
+class TriggeredEvent(Event):
+    """Base Event for signifying the fact that an object was triggered."""
+    yaml_tag = u"!TriggeredEvent"
+    pass
+
+@yaml_object(Y)
+class EngineEvent(Event):
+    """Base Event for signifying that something happend with the Engine."""
+    yaml_tag = u"!EngineEvent"
+    pass
+
+
 ##############################
 ###   GAME ENGINE
 ##############################
@@ -416,8 +453,7 @@ class EventManager(YamlableObject):
         else:
             raise EventError("Attempted to subscribe to a non-Event.")
 
-        if str(listener)=="Actor.":
-            print("WAT")
+        # if str(listener)=="Actor.": print("WAT")
         self.logger.debug("Subscription to %s by %s " % (event.__name__, listener) )
         return
 

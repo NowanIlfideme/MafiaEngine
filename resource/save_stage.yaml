@@ -7,21 +7,21 @@ entity: !EntityManager
     members: []
     name: Moderator
     phase_iter: !PhaseIterator
-      current: 1
+      current: 2
       engine: *id001
       name: ''
       phases: [day, night]
       repeat: true
     status: {}
-    vote_tally: &id005 !VoteTally
+    vote_tally: &id006 !VoteTally
       engine: *id001
       name: ''
       voted: {}
       votes: {}
-  - &id013 !Alignment
+  - &id023 !Alignment
     engine: *id001
     members:
-    - &id007 !Player
+    - &id008 !Player
       engine: *id001
       members:
       - !VoteAbility
@@ -38,14 +38,14 @@ entity: !EntityManager
           mode: allow
           name: ''
           target_types:
-          - &id006 !Actor
+          - &id007 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Townie0
       status: {}
-    - &id009 !Player
+    - &id010 !Player
       engine: *id001
       members:
       - !VoteAbility
@@ -62,18 +62,13 @@ entity: !EntityManager
           mode: allow
           name: ''
           target_types:
-          - &id008 !Actor
+          - &id009 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Townie1
       status: {}
-    name: Town
-    status: {}
-  - &id002 !MafiaAlignment
-    engine: *id001
-    members:
     - &id012 !Player
       engine: *id001
       members:
@@ -91,7 +86,84 @@ entity: !EntityManager
           mode: allow
           name: ''
           target_types:
-          - &id010 !Actor
+          - &id011 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      name: Townie2
+      status: {}
+    - &id014 !Player
+      engine: *id001
+      members:
+      - !VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases: [day]
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id013 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      name: Townie3
+      status: {}
+    - &id016 !Player
+      engine: *id001
+      members:
+      - !VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases: [day]
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id015 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      name: Townie4
+      status: {}
+    name: Town
+    status: {}
+  - &id002 !MafiaAlignment
+    engine: *id001
+    members:
+    - &id019 !Player
+      engine: *id001
+      members:
+      - !VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases: [day]
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id017 !Actor
             engine: *id001
             members: []
             name: ''
@@ -112,12 +184,57 @@ entity: !EntityManager
           mode: allow
           name: ''
           target_types:
-          - &id011 !Actor
+          - &id018 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Mafioso0
+      status: {}
+    - &id022 !Player
+      engine: *id001
+      members:
+      - !VoteAbility
+        engine: *id001
+        name: vote
+        restrictions:
+        - !PhaseRestriction
+          engine: *id001
+          mode: allow
+          name: phase_r
+          phases: [day]
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id020 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      - !MKillAbility
+        engine: *id001
+        name: mkill
+        restrictions:
+        - &id005 !MKillPhaseRestriction
+          alignment: *id002
+          engine: *id001
+          mode: allow
+          name: mkill_phase_r
+          phases: [night]
+          was_used: false
+        - !TargetRestriction
+          engine: *id001
+          mode: allow
+          name: ''
+          target_types:
+          - &id021 !Actor
+            engine: *id001
+            members: []
+            name: ''
+            status: {}
+      name: Mafioso1
       status: {}
     name: Mafia
     status: {mkill_used: false}
@@ -130,20 +247,31 @@ event: !EventManager
     ? !MKillEvent {actor: null, target: null}
     : - *id003
       - *id004
+      - *id005
     ? !PhaseChangeEvent {current: null, previous: null}
     : - *id003
-      - *id005
+      - *id006
       - *id002
       - *id004
+      - *id005
     ? !DeathEvent {target: null}
     : - *id003
-      - *id006
       - *id007
       - *id008
       - *id009
       - *id010
       - *id011
       - *id012
+      - *id013
+      - *id014
+      - *id015
+      - *id016
+      - *id017
+      - *id018
+      - *id019
+      - *id020
+      - *id021
+      - *id022
       - !GameObject
         alignment: *id002
         eliminated: false
@@ -151,7 +279,7 @@ event: !EventManager
         name: mafia_checker
         output_event_type: !AlignmentEliminatedEvent {alignment: null}
       - !GameObject
-        alignment: *id013
+        alignment: *id023
         eliminated: false
         engine: *id001
         name: town_checker
@@ -159,4 +287,4 @@ event: !EventManager
     ? !AlignmentEliminatedEvent {alignment: null}
     : - *id003
   history: !HistoryManager {}
-status: {phase: day}
+status: {phase: night}
