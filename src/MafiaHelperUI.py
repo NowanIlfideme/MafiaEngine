@@ -23,93 +23,8 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO) #INFO # DEBUG
 
 
-def bmain(*args):
-    ge = setup2(2, 1)
-
-    pass
 
 
-def setup2(n_town, n_mafia):
-    """Sets up a mountainous game with the given params"""
-    ge = GameEngine(
-        status = {
-            "phase":None
-            }
-        )
-    GameObject.default_engine = ge
-
-    #Add town team
-    tteam = Alignment(name="Town")
-    ge.entity.members.append(tteam)
-    tchecker = AlignmentEliminationChecker(name="town_checker", alignment=tteam)
-
-    round_trip(ge)
-
-    #Add mod object
-    mod = TestMod(
-        name="Moderator",
-        subscriptions=[
-            VoteEvent,
-            MKillEvent,
-            PhaseChangeEvent,
-            DeathEvent,
-            AlignmentEliminatedEvent,
-        ],
-        phase_iter = PhaseIterator(phases = ["day","night"]),
-        )
-    ge.entity.members.append(mod)
-
-    #round_trip(mod)
-
-
-    round_trip(ge)
-
-    round_trip(ge)
-
-    #Add mafia team
-    mteam = MafiaAlignment(name="Mafia")
-    ge.entity.members.append(mteam)
-
-    round_trip(ge)
-            
-
-    #Add town players
-    for i in range(0,n_town):
-        tplayer = Player(
-            name = "Townie" + str(i),
-            members = [
-                VoteAbility(name = "vote"),
-                ],
-            #status = { "alive":True },
-            )
-        tteam.members.append(tplayer)
-    #
-
-    round_trip(ge)
-
-    #Add mafia players
-    for i in range(0,n_mafia):
-        mplayer = Player(
-            name = "Mafioso" + str(i),
-            members = [
-                VoteAbility(name = "vote"),
-                MKillAbility(name = "mkill", alignment=mteam),
-                ],
-            #status = { "alive":True },
-            )
-        mteam.members.append(mplayer)
-    #
-
-    round_trip(ge)
-    
-    
-    #Add condition checkers
-    mchecker = AlignmentEliminationChecker(name="mafia_checker", alignment=mteam)
-    
-
-    round_trip(ge)
-
-    return ge
 
 def main(*args):
     """Console test for the mafia engine."""
@@ -156,11 +71,11 @@ def setup(n_town, n_mafia):
     mod = TestMod(
         name="Moderator",
         subscriptions=[
-            VoteEvent,
-            MKillEvent,
-            PhaseChangeEvent,
-            DeathEvent,
-            AlignmentEliminatedEvent,
+            PostActionEvent(VoteAction()),
+            PostActionEvent(MKillAction()),
+            PhaseChangeEvent(),
+            DeathEvent(),
+            AlignmentEliminatedEvent(),
         ],
         phase_iter = PhaseIterator(phases = ["day","night"]),
         )

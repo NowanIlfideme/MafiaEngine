@@ -260,6 +260,10 @@ class Event(RepresentableObject):
         # Extend or override for own behavior
         pass
 
+    def same_type(a, b):
+        """Determines if $b is same type as $a (or $self)."""
+        return ( type(a)==type(b) )
+
     def repr_map(self):
         """Map to use as representation (to create your self).
         Override or extend this for each child!"""
@@ -277,24 +281,32 @@ class Action(GameObject):
     """In-game action, with automatic event handling.
     Actions are working types. Base class."""
 
-    def action(self, **kwargs):
+    def _action(self, **kwargs):
         """Active portion of the class. Override this!"""
-        self.engine.event.signal(
-            Event(name="Dummy action with args: %s" % kwargs)
-            )
+        print("Please override %s._action()!" % self.__class__.__name__)
         pass
 
     def __call__(self, **kwargs):
-        """Performs the Action. 
-        Given as convenience - do not override!"""
-        self.action(**kwargs)
+        """Performs the Action and calls necessary events."""
+
+        pre_act = PreActionEvent(action=self)
+        self.engine.event.signal(pre_act)
+
+        self._action(**kwargs)
+
+        post_act = PostActionEvent(action=self)
+        self.engine.event.signal(post_act)
         pass
 
     def repr_map(self):
         return super().repr_map()
 
-    pass
+    def same_type(a, b):
+        """Returns whether $a (self) and %b are of the same type 
+        (not necessarily by class)."""
+        return ( type(a)==type(b) )
 
+    pass
 
 
 @yaml_object(Y)
@@ -307,6 +319,9 @@ class ActionEvent(Event):
     def __init__(self, action=Action(), **kwargs):
         super().__init__(action=action, **kwargs) #sets attributes
         pass
+
+    def same_type(a, b):
+        return super().same_type(b) and a.action.same_type(b)
     pass
 
 @yaml_object(Y)
@@ -332,6 +347,8 @@ class EngineEvent(Event):
     """Base Event for signifying that something happend with the Engine."""
     yaml_tag = u"!EngineEvent"
     pass
+
+
 
 
 ##############################
@@ -367,6 +384,58 @@ class HistoryManager(YamlableObject):
 
 
 @yaml_object(Y)
+class SubscribtionManager(YamlableObject):
+    """Manages subscribers of a single Event."""
+
+    #self.event - event object
+    #self.subscribers - [ (priority, object) ]
+
+    def __init__(self, event, subscribers = []):
+        if issubclass(event, Event):
+            self.event = event()
+        else: self.event = deepcopy(event)
+        self.subscribers = sorted(subscribers)
+
+        pass
+
+    def repr_map(self):
+        # TODO: Implement!
+
+        pass
+
+    def ordered_subscribers(self):
+        """Returns subscribers, in order."""
+
+        # TODO: Implement!
+        pass
+
+    def add_subscriber(self, obj, priority = -1):
+        """Subscribes obj to self."""
+        self.subscribers.append( (priority, obj) )
+        pass
+
+    def remove_subscriber(self, obj):
+        """Removes obj from self.subscribers."""
+
+        # TODO: Implement!
+        pass
+
+    def has_subscriber(self, obj):
+        """Checks whether obj is a subscriber."""
+
+        # TODO: Implement!
+        pass
+
+
+
+    def is_my_event(self, event):
+        """Checks whether 'event' is of correct type 
+        (not necessarily same class)."""
+        return self.event.same_type(event)
+
+    pass
+
+@yaml_object(Y)
 class EventManager(YamlableObject):
     """Manager for in-game events. Works as follows:
     Listeners subscribe to Events.
@@ -385,10 +454,8 @@ class EventManager(YamlableObject):
 
     yaml_tag = u"!EventManager"
 
-    def __init__(self, listeners={}, _listeners={}, history=None):
-        self._listeners = {} # event : set(obj)
-        for k, v in listeners.items(): self.subscribe(v,k)
-        for k, v in _listeners.items(): self.subscribe(v,k)
+    def __init__(self, event_map={}, history=None):
+        self.event_map = event_map # event_object : SubscriptionManager
         self.history = HistoryManager() if (history is None) else history
         return
 
@@ -398,14 +465,6 @@ class EventManager(YamlableObject):
             setattr(self, "_logger", logging.getLogger(__name__))
         return self._logger
 
-    @property
-    def listeners(self):
-        # returns dict of: type:set(listener_obj)
-        res = {}
-        for k, v in self._listeners.items():
-            res[type(k)]=v
-        return res
-
 
     def repr_map(self):
         """Map to use as representation (to create your self).
@@ -413,45 +472,42 @@ class EventManager(YamlableObject):
 
         res = super().repr_map()
         res.update( { 
-            '_listeners':self._listeners,
+            'event_map':self.event_map,
             'history':self.history,
             } )
         return res
 
     def get_subscriptions_of(self, obj):
-        # Returns the subscriptions of an object, as Types
-        res = [k for k,v in self.listeners.items() if (obj in v)]
+        # Returns the subscriptions of an object, as objects
+        
+        # TODO: Implement!
+        res = []
+        for ev in self.event_map:
+            if self.event_map[ev].has_subscriber(obj):
+                res.append(ev)
+            pass
+
         return res
 
-    def _find_evO(self, event):
-        """Find event_obj from $event"""
-        if isinstance(event,Event): return self._find_evO(type(event))
-        found_ev_obj = None
-        for k in self._listeners: # find event in keys
-            if type(k) is event:
-                found_ev_obj = k
-                break            
-        return found_ev_obj
-
-    def subscribe(self, event, listener): 
+    def subscribe(self, event, listener, priority=-1): 
         """Subscribe @listener to @event (or, if it's an object, to its Type). 
         It will be signal()'d with information when it happens."""
 
-        if isinstance(event, Event): # event is an Object
-            return self.subscribe(type(event), listener)
-
-        if issubclass(event, Event): # event is a Type
-            ev_obj = self._find_evO(event)
-            if ev_obj is None: # not found, make new one
-                ev_obj = event()
-                self._listeners[ev_obj] = [listener]
-                pass
-            elif listener in self._listeners[ev_obj]: #already inside
-                return
-            else:
-                self._listeners[ev_obj].append(listener)
-        else:
+        if issubclass(event, Event): event = event() # event is an Object
+        if not isinstance(event, Event): # event is an Object
             raise EventError("Attempted to subscribe to a non-Event.")
+
+        # TODO: Implement!
+        found = False
+        for ev, sm in self.event_map.items():
+            if event.same_type(ev):
+                found = True
+                sm.add_subscriber(listener, priority)
+                break
+        if not found: 
+            self.event_map[event] = SubscribtionManager(
+                event, subscribers=[(priority, listener)] )
+            pass
 
         # if str(listener)=="Actor.": print("WAT")
         self.logger.debug("Subscription to %s by %s " % (event.__name__, listener) )
@@ -460,12 +516,22 @@ class EventManager(YamlableObject):
     def unsubscribe(self, event, listener): 
         """No longer get signal()'d with regards to @event."""
 
-        ev_obj = self._find_evO(event)
+        # TODO: Implement!
 
-        if ev_obj is not None and listener in self._listeners[ev_obj]: #in listeners
-            self._listeners[ev_obj].remove(listener)
-            self.logger.debug("Unsubscription from %s by %s " 
-                              % (event_type.__name__, listener) )
+        found = False
+        for ev, sm in self.event_map.items():
+            if event.same_type(ev):
+                found = True
+                sm.remove_subscriber(listener)
+                break
+            pass
+
+        if found:
+            self.logger.debug("Unsubscription from %s by %s "  % (event, listener) )
+        else:
+            self.logger.debug("Can't unsub from %s, %s is not a listener." % (event, listener) )
+            pass
+        
         return
 
     def signal(self, event): 
@@ -473,16 +539,24 @@ class EventManager(YamlableObject):
         where the Type of the @event determines who will recieve it."""
 
         self.history.signal(event)
-        ev_obj = self._find_evO(event)
-        if ev_obj is None: e_set = set()
-        else: e_set = self._listeners[ev_obj]
-            
-        if len(e_set)==0:
+
+        listeners = []
+
+        # TODO: Implement!
+
+        found = False
+        for ev, sm in self.event_map.items():
+            if event.same_type(ev):
+                found = True
+                listeners.extend(sm.ordered_subscribers())
+                break
+        
+        if len(listeners)==0:
             self.logger.debug("Event happened, but 0 listeners: %s" % (event) )
         else:
             self.logger.debug("Signaling %s with %s" % 
                                 (len(e_set), event) )
-            for l in e_set:
+            for l in listeners:
                 try: l.signal(event)
                 except:
                     self.logger.exception("Could not signal.")
