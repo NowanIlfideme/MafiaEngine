@@ -15,22 +15,18 @@ class PhaseRestriction(AbilityRestriction):
         self.mode = mode
         pass
 
-    def __call__(self, abil, **kwargs):
-        """Returns True if ability is allowed."""
+    def test(self, action):
+        """Cancels action if not allowed (e.g. not in phase)."""
 
-        sup_tst = super().__call__(abil, **kwargs)
-        if not sup_tst: return False
 
-        #custom code below
         curr_phase = self.engine.status["phase"]
-        try:
-            found = (curr_phase in self.phases)
-            #other modes are 
-        except Exception as e:
-            raise AbilityError("PhaseRestriction Error: " + str(e))
-        if self.mode=="allow": return found
-        elif self.mode=="ban": return not found
-        return False
+        found = (curr_phase in self.phases)
+        
+        ok = False
+        if self.mode=="allow": ok = found
+        elif self.mode=="ban": ok = not found
+        if not ok: action.canceled = True
+        pass
 
     
     def repr_map(self):
@@ -56,26 +52,29 @@ class MKillPhaseRestriction(PhaseRestriction):
     def __init__(self, name="", alignment=None, phases=[], mode="allow", 
                     was_used = False, **kwargs):
         super().__init__(name=name, 
-                         subscriptions = [PhaseChangeEvent, MKillEvent],
+                         #extra subs to reset counter
+                         subscriptions = [PhaseChangeEvent, 
+                                          PostActionEvent(MKillAction())], 
                          phases=phases, mode=mode, **kwargs)
         self.alignment = alignment
         self.was_used = was_used
         pass
 
-    def __call__(self, abil, **kwargs):
-        """Returns True if ability is allowed."""
-
-        sup_tst = super().__call__(abil, **kwargs)
-        if not sup_tst: return False
-
-        #custom code below
-        return not self.was_used
+    def test(self, action):
+        """Cancels action if not allowed."""
+        if self.was_used:
+            action.canceled = True
+        pass
 
     def signal(self, event):
+        super().signal(event) #Take care of PreActionEvent
         if isinstance(event,PhaseChangeEvent):
             self.was_used = False
-        elif isinstance(event, MKillEvent):
-            self.was_used = True
+        elif isinstance(event, PostActionEvent):
+            action = event.action
+            if isinstance(action, MKillAction):
+                self.was_used = True
+            else: pass
         pass
 
     
@@ -109,7 +108,7 @@ class TargetRestriction(AbilityRestriction):
         for tt in target_types:
             if isinstance(tt, GameObject):
                 self.target_types.append(tt)
-            elif issubclass(tt, GameObject):
+            elif inspect.isclass(tt) and issubclass(tt, GameObject):
                 self.target_types.append(tt())
             pass
         
@@ -120,24 +119,19 @@ class TargetRestriction(AbilityRestriction):
     def _target_types(self):
         return [type(q) for q in self.target_types]
 
-    def __call__(self, abil, target=None, **kwargs):
-        """Returns True if ability is allowed."""
+    def test(self, action):
+        """Cancels action if not allowed (i.e. bad target)."""
 
-        sup_tst = super().__call__(abil, target=target, **kwargs)
-        if not sup_tst: return False
-
-        #custom code below
         found = False
-        try:
-            for t in self._target_types:
-                if isinstance(target, t):
-                    found = True
-                    break
-        except Exception as e:
-            raise AbilityError("TargetRestriction Error: " + str(e))
-        if self.mode=="allow": return found
-        elif self.mode=="ban": return not found
-        return False
+        for t in self._target_types:
+            if isinstance(target, t):
+                found = True
+                break
+        ok = False
+        if self.mode=="allow": ok = found
+        elif self.mode=="ban": ok =  not found
+        if not ok: action.canceled = True
+        pass
 
     
     def repr_map(self):
@@ -157,19 +151,18 @@ class TargetRestriction(AbilityRestriction):
 
 @yaml_object(Y)
 class VoteAction(Action):
-    """Signals that a player voted for another.
-    TODO: Implement a change to the VoteTally instead of doing it there!"""
+    """Signals that a player voted for another."""
 
     yaml_tag = u"!VoteAction"
 
-    def action(self, actor=None, target=None, **kwargs):
-        """Just sends a vote event."""
-        self.engine.event.signal(
-            VoteEvent(
-                actor=actor,
-                target=target,
-                )
-            )
+    def __init__(self, actor=None, target=None):
+        super().__init__(self)
+        self.actor = actor
+        self.target = target
+        pass
+
+    def _action(self):
+        """Does nothing in iself! VoteTally picks up automatically."""
         pass
 
     def repr_map(self):
@@ -212,7 +205,7 @@ class MKillAction(Action):
 
     def action(self, actor=None, target=None, **kwargs):
         """Just sends the requried events."""
-        self.send_signal(MKillEvent(actor=actor,target=target))
+        #self.send_signal(MKillEvent(actor=actor,target=target))
         self.send_signal(DeathEvent(target=target))
         pass
 

@@ -1,17 +1,16 @@
 from mafia_engine.base import *
 from mafia_engine.entity import *
 from mafia_engine.preset.event.simple import *
+from mafia_engine.preset.ability.simple import *
 
 @yaml_object(Y)
-class VoteTally(GameObject):
+class VoteTally(ProxyObject):
     """Holds the voting tally for the day."""
     
     yaml_tag = u"!VoteTally"
 
-    def __init__(self, name="", subscriptions=[], votes={}, voted={}, **kwargs):
-        subs = subscriptions.copy()
-        if PhaseChangeEvent not in subs:
-            subs.append(PhaseChangeEvent)
+    def __init__(self, name="", votes={}, voted={}, **kwargs):
+        subs = [PhaseChangeEvent(), PostActionEvent(VoteAction())]
         super().__init__(name=name, subscriptions=subs, **kwargs)        
         self.votes = votes
         self.voted = voted
@@ -56,16 +55,19 @@ class VoteTally(GameObject):
         return None
 
     def reset(self):
-        """Resets"""
-        #TODO: Implement!
+        """Resets all votes."""
 
         self.votes = {}
         self.voted = {}
-
         pass
     
     def signal(self, event):
-        if isinstance(event, PhaseChangeEvent) and event.previous=="day":
+        if isinstance(event, PostActionEvent):
+            action = event.action
+            if isinstance(action, VoteAction):
+
+                pass
+        elif isinstance(event, PhaseChangeEvent) and event.previous=="day":
             #Process votes!
 
             #votes_str = str(self.votes)
@@ -80,8 +82,8 @@ class VoteTally(GameObject):
                 voted_str += str(k) + ":" + str(self.voted[k]) + ", "
             voted_str += "}"
 
-            print("Votes: " + votes_str)
-            print("Total: " + voted_str)
+            res = "Votes: " + votes_str + "\n" + "Total: " + voted_str
+            print(res)
 
             target = self.lynch_result()
 
@@ -95,6 +97,7 @@ class VoteTally(GameObject):
             #Reset voting
             self.reset()
             pass
+        
         pass
 
     pass
@@ -142,18 +145,21 @@ class TestMod(Moderator):
         prefix = "-> "
 
         #Get message
-        if isinstance(event, VoteEvent): 
-            print("%s%s voted for %s!" % (prefix, event.actor.name, event.target.name) )
-            self.vote_tally.add_vote(event.actor, event.target)
+        if isinstance(event, ActionEvent):
+            action = event.action
+            if isinstance(action, VoteAction):
+                print("%s%s voted for %s!" % (prefix, event.actor.name, event.target.name) )
+                self.vote_tally.add_vote(event.actor, event.target)
+            elif isinstance(action, MKillAction):
+                print("%s%s used mkill on %s!" % (prefix, event.actor.name, event.target.name) )
+            else: pass
             pass
+
 
         if isinstance(event, PhaseChangeEvent):
             print("%sPhase changed, now: %s" % (prefix, self.engine.status["phase"]) )
             pass
 
-        if isinstance(event, MKillEvent): 
-            print("%s%s used mkill on %s!" % (prefix, event.actor.name, event.target.name) )
-            pass
 
         if isinstance(event, DeathEvent):
             print("%s%s died!" % (prefix, event.target.name) )

@@ -1,33 +1,6 @@
-from mafia_engine.base import GameObject, Action, Y, AbilityError
+from mafia_engine.base import *
 
 from ruamel.yaml import YAML, yaml_object
-
-@yaml_object(Y)
-class AbilityRestriction(GameObject): # TODO: DEPRECATED Remove.
-    """Represents a callable "restriction" object, used to check
-    whether an ability is legal to use."""
-
-    yaml_tag = u"!AbilityRestriction"
-
-    def __init__(self,  **kwargs):
-        """
-        Keys: name
-        """
-        super().__init__(**kwargs)
-        pass
-
-    def __call__(self, abil, **kwargs):
-        """Override this! Return True if you allow. 
-        In case of argument error, Raise AbilityError.
-        Make sure to call the super's method."""
-
-        #super().__call__(abil, **kwargs) #ONLY for descendants
-        if not isinstance(abil, Ability):
-            raise AbilityError("Wrong type. 'abil' should be 'self'. \
-Exptected Ability, recieved " + str(abil.__class__.__name__))
-        return True
-
-    pass
 
 
 @yaml_object(Y)
@@ -35,6 +8,8 @@ class Ability(GameObject):
     """Denotes an ability, which can be used as an Action.
     This is a base type for Activated and Automatic abilities
     (akin to Magic: The Gathering's system). """
+
+    yaml_tag = u"!Ability"
 
     def __init__(self, name="", **kwargs):
         """
@@ -65,25 +40,23 @@ class Ability(GameObject):
 @yaml_object(Y)
 class ActivatedAbility(Ability):
     """Ability that gets activated by an Entity.
-    This (usually) generates an Action and Event when used."""
+    This (usually) generates an Action and Event when used.
+    Restrictions are AbilityRestriction objects that get subscribed to
+    to PreActionEvent for our Action.
+    """
 
     def __init__(self, restrictions=[], **kwargs):
         super().__init__(**kwargs)
         self.restrictions = restrictions
+        for r in restrictions:
+            self.engine.event.subscribe(PreActionEvent(self.action_type()), r)
+        #
+
         pass
     
     def action(self, **kwargs):
-        act = self.action_type(engine=self.engine)
-
-        for r in self.restrictions:
-            try:
-                if not r(self, **kwargs): 
-                    #If we fail even one restriction, we must return
-                    raise AbilityError("Abilitiy failed due to restriction: %s." % r) #For debuggingg
-                    return #TODO: Add return value from actions?
-            except AbilityError as e:
-                raise #for debugging; in real life, you'd want to return       
-        act(**kwargs)
+        act = self.action_type(**kwargs)
+        act.run()
         pass
     
     def repr_map(self):
@@ -125,3 +98,27 @@ class AutomaticAbility(Ability):
 
 
     pass
+
+
+
+@yaml_object(Y)
+class AbilityRestriction(ProxyObject):
+
+    def __init__(self, name="", **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        pass
+
+    def signal(self, event):
+        if isinstance(event, PreActionEvent):
+            action = event.action
+            self.test(action)
+            pass
+        pass
+
+    def test(self, action):
+        """Cancels action if not allowed.
+        Override this!"""
+        pass
+    pass
+

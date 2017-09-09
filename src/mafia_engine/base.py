@@ -202,30 +202,48 @@ class Event(RepresentableObject):
 
     pass
 
+
 @yaml_object(Y)
 class Action(GameObject):
     """In-game action, with automatic event handling.
-    Actions are working types. Base class."""
+    Base class. To use, override __init__ and _action."""
 
-    def _action(self, **kwargs):
+    #yaml_tag = u"!Action" #Base class should never be YAML'd...
+
+    def __init__(self, canceled=False, **kwargs):
+        """Initialize arguments here. Override this!"""
+        super().__init__(**kwargs)
+        self.canceled = False
+        pass
+
+    def _action(self):
         """Active portion of the class. Override this!"""
+        # Note: uses things initialized in __init__
+
         print("Please override %s._action()!" % self.__class__.__name__)
         pass
 
-    def __call__(self, **kwargs):
+
+    def run(self):
         """Performs the Action and calls necessary events."""
 
         pre_act = PreActionEvent(action=self)
         self.engine.event.signal(pre_act)
 
-        self._action(**kwargs)
+        if self.canceled: return
+
+        self._action()
 
         post_act = PostActionEvent(action=self)
         self.engine.event.signal(post_act)
         pass
 
     def repr_map(self):
-        return super().repr_map()
+        res = super().repr_map()
+        res.update({ 
+            "canceled":self.canceled,
+           })
+        return res
 
     def same_type(a, b):
         """Returns whether $a (self) and %b are of the same type 
@@ -233,6 +251,7 @@ class Action(GameObject):
         return ( type(a)==type(b) )
 
     pass
+
 
 
 @yaml_object(Y)
