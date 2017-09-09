@@ -1,12 +1,20 @@
 import logging
 import warnings
 import sys
+import inspect
+
+from copy import copy as shallowcopy, deepcopy
 
 from ruamel.yaml import YAML, yaml_object
+
+##############################
+###   DEFAULTS
+##############################
 
 Y = YAML(typ='safe', pure=True)
 #Y.default_flow_style=False
 
+__default_priorty__ = -1
 
 ##############################
 ###   BASE  CLASSES
@@ -133,9 +141,9 @@ class GameObject(YamlableObject):
         """Signal the event manager that $event happened."""
         self.engine.event.signal(event)
 
-    def subscribe(self, event):
+    def subscribe(self, event, priority=__default_priorty__):
         """Subscribe $self (as listener) to $event."""
-        self.engine.event.subscribe(event,self)
+        self.engine.event.subscribe(event, self, priority)
         pass
 
     def unsubscribe(self, event):
@@ -152,88 +160,6 @@ class ProxyObject(GameObject):
     yaml_tag=u"ProxyObject"
     # TODO: Implement! When they become required.
     pass
-
-
-
-##############################
-###   ENTITY
-##############################
-
-@yaml_object(Y)
-class Entity(GameObject):
-    """Denotes a game-world entity. Base class."""
-
-    yaml_tag = u"!Entity"
-
-    def __init__(self, name="", subscriptions=[], status={}, members=[], 
-                 engine=None, **kwargs):
-        super().__init__(name=name, subscriptions=subscriptions, 
-                         engine=engine, **kwargs)
-        self.status = status.copy()
-        self.members = members.copy()
-        pass
-
-    def signal(self, event):
-        """Gets called when subscribed to other events. Override this!"""
-        pass
-
-    def repr_map(self):
-        """Map to use as representation (to create your self).
-        Override or extend this for each child!"""
-
-        res = super().repr_map()
-        res.update( { 
-            'status':self.status,
-            'members':self.members,
-            } )
-        return res
-
-
-    # Helper functions for working with members:
-
-    def members_by_lambda(self, lamb, recursive = False):
-        """Gets members for whom $lamb(e) is True"""
-        found_membs = []
-        if recursive:
-            for e in self.members:
-                if lamb(e): found_membs.append(e)
-                try:
-                    tmp = e.members_by_lambda(lamb, recursive)
-                    found_membs.extend(tmp)
-                except: pass #we can't tell whether they implement
-        else:
-            for e in self.members:
-                if lamb(e): found_membs.append(e)
-        return found_membs
-
-    def members_by_name(self, name, recursive = False):
-        """Gets entities whose name is $name."""
-        return self.members_by_lambda(
-            lambda e: e.name==name, recursive)
-
-    def members_by_type(self, type, recursive = False):
-        """Gets members who are instances of $type."""
-        return self.members_by_lambda(
-            lambda e: isinstance(e, type), recursive)
-
-    def members_by_status(self, status, recursive = False):
-        """Gets members whose $status exists and conforms to it."""
-        lamb = lambda x : hasattr(x,"status") and all(
-            [k in x.status and x.status[k]==status[k] for k in status] )
-        return self.members_by_lambda(lamb, recursive)
-    
-    pass
-
-@yaml_object(Y)
-class EntityManager(Entity):
-    """Global entity manager."""
-
-    yaml_tag = u"!EntityManager"
-
-    # TODO: Implement!
-
-    pass
-
 
 
 ##############################
@@ -352,6 +278,87 @@ class EngineEvent(Event):
 
 
 ##############################
+###   ENTITY
+##############################
+
+@yaml_object(Y)
+class Entity(GameObject):
+    """Denotes a game-world entity. Base class."""
+
+    yaml_tag = u"!Entity"
+
+    def __init__(self, name="", subscriptions=[], status={}, members=[], 
+                 engine=None, **kwargs):
+        super().__init__(name=name, subscriptions=subscriptions, 
+                         engine=engine, **kwargs)
+        self.status = status.copy()
+        self.members = members.copy()
+        pass
+
+    def signal(self, event):
+        """Gets called when subscribed to other events. Override this!"""
+        pass
+
+    def repr_map(self):
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
+
+        res = super().repr_map()
+        res.update( { 
+            'status':self.status,
+            'members':self.members,
+            } )
+        return res
+
+
+    # Helper functions for working with members:
+
+    def members_by_lambda(self, lamb, recursive = False):
+        """Gets members for whom $lamb(e) is True"""
+        found_membs = []
+        if recursive:
+            for e in self.members:
+                if lamb(e): found_membs.append(e)
+                try:
+                    tmp = e.members_by_lambda(lamb, recursive)
+                    found_membs.extend(tmp)
+                except: pass #we can't tell whether they implement
+        else:
+            for e in self.members:
+                if lamb(e): found_membs.append(e)
+        return found_membs
+
+    def members_by_name(self, name, recursive = False):
+        """Gets entities whose name is $name."""
+        return self.members_by_lambda(
+            lambda e: e.name==name, recursive)
+
+    def members_by_type(self, type, recursive = False):
+        """Gets members who are instances of $type."""
+        return self.members_by_lambda(
+            lambda e: isinstance(e, type), recursive)
+
+    def members_by_status(self, status, recursive = False):
+        """Gets members whose $status exists and conforms to it."""
+        lamb = lambda x : hasattr(x,"status") and all(
+            [k in x.status and x.status[k]==status[k] for k in status] )
+        return self.members_by_lambda(lamb, recursive)
+    
+    pass
+
+@yaml_object(Y)
+class EntityManager(Entity):
+    """Global entity manager."""
+
+    yaml_tag = u"!EntityManager"
+
+    # TODO: Implement!
+
+    pass
+
+
+
+##############################
 ###   GAME ENGINE
 ##############################
 
@@ -384,47 +391,57 @@ class HistoryManager(YamlableObject):
 
 
 @yaml_object(Y)
-class SubscribtionManager(YamlableObject):
+class SingleSubscription(YamlableObject):
     """Manages subscribers of a single Event."""
+
+    yaml_tag = u"!SingleSubscription"
 
     #self.event - event object
     #self.subscribers - [ (priority, object) ]
 
     def __init__(self, event, subscribers = []):
-        if issubclass(event, Event):
+        if inspect.isclass(event):
             self.event = event()
-        else: self.event = deepcopy(event)
-        self.subscribers = sorted(subscribers)
+        else: self.event = shallowcopy(event)
+        self.subscribers = subscribers
 
         pass
 
     def repr_map(self):
-        # TODO: Implement!
+        """Map to use as representation (to create your self).
+        Override or extend this for each child!"""
 
-        pass
+        res = super().repr_map()
+        res.update( { 
+            'event':self.event,
+            'subscribers':self.subscribers,
+            } )
+        return res
 
     def ordered_subscribers(self):
-        """Returns subscribers, in order."""
+        """Returns subscribers, in order of descending priority."""
+        tmp = sorted(self.subscribers, key=lambda x: x[0], reverse=True)        
+        return [t[1] for t in tmp]
 
-        # TODO: Implement!
-        pass
-
-    def add_subscriber(self, obj, priority = -1):
+    def add_subscriber(self, obj, priority = __default_priorty__):
         """Subscribes obj to self."""
         self.subscribers.append( (priority, obj) )
         pass
 
     def remove_subscriber(self, obj):
         """Removes obj from self.subscribers."""
-
-        # TODO: Implement!
+        i=0
+        while i<len(self.subscribers):
+            p, o = self.subscribers[i]
+            if o is obj: del self.subscribers[i]
+            else: i+=1
         pass
 
     def has_subscriber(self, obj):
         """Checks whether obj is a subscriber."""
-
-        # TODO: Implement!
-        pass
+        for p, o in self.subscribers:
+            if o is obj: return True
+        return False
 
 
 
@@ -454,8 +471,8 @@ class EventManager(YamlableObject):
 
     yaml_tag = u"!EventManager"
 
-    def __init__(self, event_map={}, history=None):
-        self.event_map = event_map # event_object : SubscriptionManager
+    def __init__(self, events=[], history=None):
+        self.events = events # list of SingleSubscription
         self.history = HistoryManager() if (history is None) else history
         return
 
@@ -465,14 +482,13 @@ class EventManager(YamlableObject):
             setattr(self, "_logger", logging.getLogger(__name__))
         return self._logger
 
-
     def repr_map(self):
         """Map to use as representation (to create your self).
         Override or extend this for each child!"""
 
         res = super().repr_map()
         res.update( { 
-            'event_map':self.event_map,
+            'events':self.events,
             'history':self.history,
             } )
         return res
@@ -480,49 +496,45 @@ class EventManager(YamlableObject):
     def get_subscriptions_of(self, obj):
         # Returns the subscriptions of an object, as objects
         
-        # TODO: Implement!
         res = []
-        for ev in self.event_map:
-            if self.event_map[ev].has_subscriber(obj):
-                res.append(ev)
+        for ss in self.events:
+            if ss.has_subscriber(obj):
+                res.append(ss.event)
             pass
-
         return res
 
     def subscribe(self, event, listener, priority=-1): 
         """Subscribe @listener to @event (or, if it's an object, to its Type). 
         It will be signal()'d with information when it happens."""
 
-        if issubclass(event, Event): event = event() # event is an Object
-        if not isinstance(event, Event): # event is an Object
+        if inspect.isclass(event): event = event() # event is now an Object
+        if not isinstance(event, Event):
             raise EventError("Attempted to subscribe to a non-Event.")
 
         # TODO: Implement!
         found = False
-        for ev, sm in self.event_map.items():
-            if event.same_type(ev):
+        for ss in self.events:
+            if ss.is_my_event(event):
                 found = True
-                sm.add_subscriber(listener, priority)
+                ss.add_subscriber(listener, priority)
                 break
-        if not found: 
-            self.event_map[event] = SubscribtionManager(
-                event, subscribers=[(priority, listener)] )
+        if not found:
+            self.events.append( SingleSubscription(
+                event, subscribers=[(priority, listener)] ) )
             pass
 
         # if str(listener)=="Actor.": print("WAT")
-        self.logger.debug("Subscription to %s by %s " % (event.__name__, listener) )
+        self.logger.debug("Subscription to %s by %s " % (event, listener) )
         return
 
     def unsubscribe(self, event, listener): 
         """No longer get signal()'d with regards to @event."""
 
-        # TODO: Implement!
-
         found = False
-        for ev, sm in self.event_map.items():
-            if event.same_type(ev):
+        for ss in self.events:
+            if ss.is_my_event(event):
                 found = True
-                sm.remove_subscriber(listener)
+                ss.remove_subscriber(listener)
                 break
             pass
 
@@ -540,26 +552,24 @@ class EventManager(YamlableObject):
 
         self.history.signal(event)
 
-        listeners = []
-
-        # TODO: Implement!
-
         found = False
-        for ev, sm in self.event_map.items():
-            if event.same_type(ev):
+        listeners = []
+        for ss in self.events:
+            if ss.is_my_event(event):
                 found = True
-                listeners.extend(sm.ordered_subscribers())
+                listeners = ss.ordered_subscribers()
                 break
         
         if len(listeners)==0:
             self.logger.debug("Event happened, but 0 listeners: %s" % (event) )
         else:
             self.logger.debug("Signaling %s with %s" % 
-                                (len(e_set), event) )
+                                (len(listeners), event) )
             for l in listeners:
                 try: l.signal(event)
                 except:
-                    self.logger.exception("Could not signal.")
+                    self.logger.exception("Could not signal %l with event %s." % 
+                                          (l, event) )
                     raise
         return
 

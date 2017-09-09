@@ -20,7 +20,7 @@ from mafia_engine.preset.simple import *
 
 default_args = [] #[2, 1]
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO) #INFO # DEBUG
+logging.basicConfig(level=logging.DEBUG) # INFO # DEBUG
 
 
 
