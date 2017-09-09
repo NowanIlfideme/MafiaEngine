@@ -124,7 +124,7 @@ class TargetRestriction(AbilityRestriction):
 
         found = False
         for t in self._target_types:
-            if isinstance(target, t):
+            if isinstance(action.target, t):
                 found = True
                 break
         ok = False
@@ -155,8 +155,8 @@ class VoteAction(Action):
 
     yaml_tag = u"!VoteAction"
 
-    def __init__(self, actor=None, target=None):
-        super().__init__(self)
+    def __init__(self, actor=None, target=None, canceled=False):
+        super().__init__(canceled=canceled)
         self.actor = actor
         self.target = target
         pass
@@ -166,7 +166,12 @@ class VoteAction(Action):
         pass
 
     def repr_map(self):
-        return super().repr_map()
+        res = super().repr_map()
+        res.update({
+            'actor':self.actor,
+            'target':self.target,
+            })
+        return res
     pass
 
 @yaml_object(Y)
@@ -203,11 +208,27 @@ class MKillAction(Action):
     
     yaml_tag = u"!MKillAction"
 
-    def action(self, actor=None, target=None, **kwargs):
+    def __init__(self, actor=None, target=None, canceled = False):
+        super().__init__(canceled=canceled)
+        self.actor = actor
+        self.target = target
+        pass
+
+    def _action(self):
         """Just sends the requried events."""
         #self.send_signal(MKillEvent(actor=actor,target=target))
-        self.send_signal(DeathEvent(target=target))
+        self.send_signal(DeathEvent(target=self.target))
         pass
+
+    def repr_map(self):
+        res = super().repr_map()
+        res.update({
+            'actor':self.actor,
+            'target':self.target,
+            })
+        return res
+
+    pass
 
 
 @yaml_object(Y)

@@ -265,8 +265,16 @@ class ActionEvent(Event):
         super().__init__(action=action, **kwargs) #sets attributes
         pass
 
+    def repr_map(self):
+        res = super().repr_map()
+        res.update({
+            "action":self.action,
+            })
+        return res
+
     def same_type(a, b):
-        return super().same_type(b) and a.action.same_type(b)
+        try: return super().same_type(b) and a.action.same_type(b.action)
+        except: return False
     pass
 
 @yaml_object(Y)
@@ -587,8 +595,7 @@ class EventManager(YamlableObject):
             for l in listeners:
                 try: l.signal(event)
                 except:
-                    self.logger.exception("Could not signal %l with event %s." % 
-                                          (l, event) )
+                    self.logger.exception("Could not signal %s with event %s." % (l, event))
                     raise
         return
 

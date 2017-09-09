@@ -148,10 +148,10 @@ class TestMod(Moderator):
         if isinstance(event, ActionEvent):
             action = event.action
             if isinstance(action, VoteAction):
-                print("%s%s voted for %s!" % (prefix, event.actor.name, event.target.name) )
-                self.vote_tally.add_vote(event.actor, event.target)
+                print("%s%s voted for %s!" % (prefix, action.actor.name, action.target.name) )
+                self.vote_tally.add_vote(action.actor, action.target)
             elif isinstance(action, MKillAction):
-                print("%s%s used mkill on %s!" % (prefix, event.actor.name, event.target.name) )
+                print("%s%s used mkill on %s!" % (prefix, action.actor.name, action.target.name) )
             else: pass
             pass
 
