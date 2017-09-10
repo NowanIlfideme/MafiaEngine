@@ -18,75 +18,75 @@ entity: !EntityManager
       name: ''
       voted: {}
       votes: {}
-  - &id019 !Alignment
+  - &id031 !Alignment
     engine: *id001
     members:
-    - &id008 !Player
+    - &id020 !Player
       engine: *id001
       members:
       - !VoteAbility
         engine: *id001
         name: vote
         restrictions:
-        - &id020 !PhaseRestriction
+        - &id005 !PhaseRestriction
           engine: *id001
           mode: allow
           name: phase_r
           phases: [day]
-        - &id021 !TargetRestriction
+        - &id006 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id007 !Actor
+          - &id019 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Townie0
-      status: {dead: true}
-    - &id010 !Player
+      status: {}
+    - &id022 !Player
       engine: *id001
       members:
       - !VoteAbility
         engine: *id001
         name: vote
         restrictions:
-        - &id022 !PhaseRestriction
+        - &id007 !PhaseRestriction
           engine: *id001
           mode: allow
           name: phase_r
           phases: [day]
-        - &id023 !TargetRestriction
+        - &id008 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id009 !Actor
+          - &id021 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Townie1
       status: {dead: true}
-    - &id012 !Player
+    - &id024 !Player
       engine: *id001
       members:
       - !VoteAbility
         engine: *id001
         name: vote
         restrictions:
-        - &id024 !PhaseRestriction
+        - &id009 !PhaseRestriction
           engine: *id001
           mode: allow
           name: phase_r
           phases: [day]
-        - &id025 !TargetRestriction
+        - &id010 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id011 !Actor
+          - &id023 !Actor
             engine: *id001
             members: []
             name: ''
@@ -98,24 +98,24 @@ entity: !EntityManager
   - &id002 !MafiaAlignment
     engine: *id001
     members:
-    - &id015 !Player
+    - &id027 !Player
       engine: *id001
       members:
       - !VoteAbility
         engine: *id001
         name: vote
         restrictions:
-        - &id026 !PhaseRestriction
+        - &id011 !PhaseRestriction
           engine: *id001
           mode: allow
           name: phase_r
           phases: [day]
-        - &id027 !TargetRestriction
+        - &id012 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id013 !Actor
+          - &id025 !Actor
             engine: *id001
             members: []
             name: ''
@@ -124,43 +124,43 @@ entity: !EntityManager
         engine: *id001
         name: mkill
         restrictions:
-        - &id005 !MKillPhaseRestriction
+        - &id015 !MKillPhaseRestriction
           alignment: *id002
           engine: *id001
           mode: allow
           name: mkill_phase_r
           phases: [night]
           was_used: false
-        - &id030 !TargetRestriction
+        - &id016 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id014 !Actor
+          - &id026 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Mafioso0
-      status: {dead: true}
-    - &id018 !Player
+      status: {}
+    - &id030 !Player
       engine: *id001
       members:
       - !VoteAbility
         engine: *id001
         name: vote
         restrictions:
-        - &id028 !PhaseRestriction
+        - &id013 !PhaseRestriction
           engine: *id001
           mode: allow
           name: phase_r
           phases: [day]
-        - &id029 !TargetRestriction
+        - &id014 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id016 !Actor
+          - &id028 !Actor
             engine: *id001
             members: []
             name: ''
@@ -169,25 +169,25 @@ entity: !EntityManager
         engine: *id001
         name: mkill
         restrictions:
-        - &id006 !MKillPhaseRestriction
+        - &id017 !MKillPhaseRestriction
           alignment: *id002
           engine: *id001
           mode: allow
           name: mkill_phase_r
           phases: [night]
           was_used: false
-        - &id031 !TargetRestriction
+        - &id018 !TargetRestriction
           engine: *id001
           mode: allow
           name: ''
           target_types:
-          - &id017 !Actor
+          - &id029 !Actor
             engine: *id001
             members: []
             name: ''
             status: {}
       name: Mafioso1
-      status: {dead: true}
+      status: {}
     name: Mafia
     status: {mkill_used: false}
   name: all_entities
@@ -207,39 +207,10 @@ event: !EventManager
       - *id003
     - - -1
       - *id004
-  - !SingleSubscription
-    event: !PostActionEvent
-      action: !MKillAction
-        actor: null
-        canceled: false
-        engine: *id001
-        name: ''
-        target: null
-    subscribers:
-    - - -1
-      - *id003
     - - -1
       - *id005
     - - -1
       - *id006
-  - !SingleSubscription
-    event: !PhaseChangeEvent {current: null, previous: null}
-    subscribers:
-    - - -1
-      - *id003
-    - - -1
-      - *id004
-    - - -1
-      - *id002
-    - - -1
-      - *id005
-    - - -1
-      - *id006
-  - !SingleSubscription
-    event: !DeathEvent {target: null}
-    subscribers:
-    - - -1
-      - *id003
     - - -1
       - *id007
     - - -1
@@ -256,6 +227,19 @@ event: !EventManager
       - *id013
     - - -1
       - *id014
+  - !SingleSubscription
+    event: !PostActionEvent
+      action: !MKillAction
+        actor: null
+        canceled: false
+        engine: *id001
+        name: ''
+        target: null
+    subscribers:
+    - - -1
+      - *id003
+    - - -1
+      - *id015
     - - -1
       - *id015
     - - -1
@@ -263,35 +247,29 @@ event: !EventManager
     - - -1
       - *id017
     - - -1
+      - *id017
+    - - -1
       - *id018
-    - - -1
-      - !GameObject
-        alignment: *id002
-        eliminated: true
-        engine: *id001
-        name: mafia_checker
-        output_event_type: !AlignmentEliminatedEvent {alignment: null}
-    - - -1
-      - !GameObject
-        alignment: *id019
-        eliminated: false
-        engine: *id001
-        name: town_checker
-        output_event_type: !AlignmentEliminatedEvent {alignment: null}
   - !SingleSubscription
-    event: !AlignmentEliminatedEvent {alignment: null}
+    event: !PhaseChangeEvent {current: null, previous: null}
     subscribers:
     - - -1
       - *id003
+    - - -1
+      - *id004
+    - - -1
+      - *id002
+    - - -1
+      - *id015
+    - - -1
+      - *id017
   - !SingleSubscription
-    event: !PreActionEvent
-      action: !VoteAction
-        actor: null
-        canceled: false
-        engine: *id001
-        name: ''
-        target: null
+    event: !DeathEvent {target: null}
     subscribers:
+    - - -1
+      - *id003
+    - - -1
+      - *id019
     - - -1
       - *id020
     - - -1
@@ -312,6 +290,56 @@ event: !EventManager
       - *id028
     - - -1
       - *id029
+    - - -1
+      - *id030
+    - - -1
+      - !GameObject
+        alignment: *id002
+        eliminated: false
+        engine: *id001
+        name: mafia_checker
+        output_event_type: !AlignmentEliminatedEvent {alignment: null}
+    - - -1
+      - !GameObject
+        alignment: *id031
+        eliminated: false
+        engine: *id001
+        name: town_checker
+        output_event_type: !AlignmentEliminatedEvent {alignment: null}
+  - !SingleSubscription
+    event: !AlignmentEliminatedEvent {alignment: null}
+    subscribers:
+    - - -1
+      - *id003
+  - !SingleSubscription
+    event: !PreActionEvent
+      action: !VoteAction
+        actor: null
+        canceled: false
+        engine: *id001
+        name: ''
+        target: null
+    subscribers:
+    - - -1
+      - *id005
+    - - -1
+      - *id006
+    - - -1
+      - *id007
+    - - -1
+      - *id008
+    - - -1
+      - *id009
+    - - -1
+      - *id010
+    - - -1
+      - *id011
+    - - -1
+      - *id012
+    - - -1
+      - *id013
+    - - -1
+      - *id014
   - !SingleSubscription
     event: !PreActionEvent
       action: !MKillAction
@@ -322,12 +350,12 @@ event: !EventManager
         target: null
     subscribers:
     - - -1
-      - *id005
+      - *id015
     - - -1
-      - *id030
+      - *id016
     - - -1
-      - *id006
+      - *id017
     - - -1
-      - *id031
+      - *id018
   history: !HistoryManager {}
-status: {finished: true, phase: night}
+status: {phase: night}

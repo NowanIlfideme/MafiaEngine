@@ -65,7 +65,7 @@ class VoteTally(ProxyObject):
         if isinstance(event, PostActionEvent):
             action = event.action
             if isinstance(action, VoteAction):
-
+                self.add_vote(action.actor, action.target)
                 pass
         elif isinstance(event, PhaseChangeEvent) and event.previous=="day":
             #Process votes!

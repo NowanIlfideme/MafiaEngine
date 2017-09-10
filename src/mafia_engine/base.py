@@ -14,7 +14,7 @@ from ruamel.yaml import YAML, yaml_object
 Y = YAML(typ='safe', pure=True)
 #Y.default_flow_style=False
 
-__default_priorty__ = -1
+__default_priority__ = -1
 
 ##############################
 ###   BASE  CLASSES
@@ -141,7 +141,7 @@ class GameObject(YamlableObject):
         """Signal the event manager that $event happened."""
         self.engine.event.signal(event)
 
-    def subscribe(self, event, priority=__default_priorty__):
+    def subscribe(self, event, priority=__default_priority__):
         """Subscribe $self (as listener) to $event."""
         self.engine.event.subscribe(event, self, priority)
         pass
@@ -210,9 +210,10 @@ class Action(GameObject):
 
     #yaml_tag = u"!Action" #Base class should never be YAML'd...
 
-    def __init__(self, canceled=False, **kwargs):
+    def __init__(self, actor=None, canceled=False, **kwargs):
         """Initialize arguments here. Override this!"""
         super().__init__(**kwargs)
+        self.actor = actor
         self.canceled = False
         pass
 
@@ -241,6 +242,7 @@ class Action(GameObject):
     def repr_map(self):
         res = super().repr_map()
         res.update({ 
+            "actor":self.actor,
             "canceled":self.canceled,
            })
         return res
@@ -293,12 +295,6 @@ class PostActionEvent(ActionEvent):
 class TriggeredEvent(Event):
     """Base Event for signifying the fact that an object was triggered."""
     yaml_tag = u"!TriggeredEvent"
-    pass
-
-@yaml_object(Y)
-class EngineEvent(Event):
-    """Base Event for signifying that something happend with the Engine."""
-    yaml_tag = u"!EngineEvent"
     pass
 
 
@@ -386,7 +382,7 @@ class EntityManager(Entity):
 
 
 ##############################
-###   GAME ENGINE
+###   EVENT MANAGEMENT
 ##############################
 
 @yaml_object(Y)
@@ -450,7 +446,7 @@ class SingleSubscription(YamlableObject):
         tmp = sorted(self.subscribers, key=lambda x: x[0], reverse=True)        
         return [t[1] for t in tmp]
 
-    def add_subscriber(self, obj, priority = __default_priorty__):
+    def add_subscriber(self, obj, priority = __default_priority__):
         """Subscribes obj to self."""
         self.subscribers.append( (priority, obj) )
         pass
@@ -604,10 +600,24 @@ class EventManager(YamlableObject):
 
 
 
+##############################
+###   GAME ENGINE
+##############################
+
+
+@yaml_object(Y)
+class EngineEvent(Event):
+    """Base Event for signifying that something happend with the Engine."""
+    yaml_tag = u"!EngineEvent"
+    pass
+
+
+
 
 @yaml_object(Y)
 class GameEngine(YamlableObject):
-    """Defines a complete Mafia-like game."""
+    """Defines a complete Mafia-like game.
+    Base class. Override!"""
 
     yaml_tag = u"!GameEngine"
 

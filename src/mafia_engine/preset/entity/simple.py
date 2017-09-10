@@ -3,6 +3,7 @@ from mafia_engine.base import Y
 from mafia_engine.entity import *
 from mafia_engine.preset.event.simple import *
 
+
 @yaml_object(Y)
 class MafiaAlignment(Alignment):
     """Denotes the mafia team."""

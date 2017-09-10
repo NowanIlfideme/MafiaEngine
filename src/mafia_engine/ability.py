@@ -50,6 +50,7 @@ class ActivatedAbility(Ability):
         self.restrictions = restrictions
         for r in restrictions:
             self.engine.event.subscribe(PreActionEvent(self.action_type()), r)
+            self.engine.event.subscribe(PostActionEvent(self.action_type()), r)
         #
 
         pass
@@ -103,6 +104,10 @@ class AutomaticAbility(Ability):
 
 @yaml_object(Y)
 class AbilityRestriction(ProxyObject):
+    """Restriction on an ability, that cancels actions
+    if they aren't allowed at that moment.
+    ActivatedAbilities automatically subscribe to the
+    correct actions."""
 
     def __init__(self, name="", **kwargs):
         super().__init__(name=name, **kwargs)
@@ -110,15 +115,20 @@ class AbilityRestriction(ProxyObject):
         pass
 
     def signal(self, event):
+        """Override this! Automatically subscribed to Pre- and
+        PostActionEvent for relevant event."""
+
+        print("Override this!")
         if isinstance(event, PreActionEvent):
             action = event.action
-            self.test(action)
+            # Test if OK.
+            #action.canceled = True
             pass
-        pass
-
-    def test(self, action):
-        """Cancels action if not allowed.
-        Override this!"""
+        elif isinstance(event, PostActionEvent):
+            action = event.action
+            # Note that action has been used.
+            # Can't cancel at this point, but might change internal state.
+            pass
         pass
     pass
 

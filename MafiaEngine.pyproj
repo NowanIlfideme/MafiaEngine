@@ -25,8 +25,23 @@
     <Content Include="resource\save_stage.yaml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\GameGenerator.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\MafiaHelperUI.py" />
     <Compile Include="src\mafia_engine\ability.py" />
+    <Compile Include="src\mafia_engine\basic\ability.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\basic\entity.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\basic\logic.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\mafia_engine\basic\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\mafia_engine\preset\ability\simple.py">
       <SubType>Code</SubType>
     </Compile>
@@ -66,6 +81,7 @@
     <Folder Include="resource" />
     <Folder Include="src" />
     <Folder Include="src\mafia_engine" />
+    <Folder Include="src\mafia_engine\basic\" />
     <Folder Include="src\mafia_engine\preset\" />
     <Folder Include="src\mafia_engine\preset\ability\" />
     <Folder Include="src\mafia_engine\preset\entity\" />
