@@ -2,7 +2,11 @@
 
 Engine for Mafia-like games. Unsurprising, right?
 
-This project is a Proof-of-Concept, and is being rebuild at https://github.com/open-mafia/open_mafia_engine
+This project is a Proof-of-Concept, and is being rebuilt at:
+
+https://github.com/open-mafia/open_mafia_engine 
+
+for higher flexibility and readability.
 
 
 
