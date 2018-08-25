@@ -2,18 +2,21 @@
 
 Engine for Mafia-like games. Unsurprising, right?
 
-This project is currently under construction.
+This project is a Proof-of-Concept, and is being rebuild at https://github.com/open-mafia/open_mafia_engine
 
 
-## Current Development
 
-The initial game engine is being built, along with a minimal set of abilities 
+## Development
+
+The initial game engine was being built, along with a minimal set of abilities 
 (later on, a large set of stock abilities will be available). Currently, the
 example game runs approximately like this:
 
 ![Example Mafia Game](documentation/ExampleMafiaGame.PNG)
 
 and everything about the game is hard-coded (no config yet).
+
+We plan on fixing that in the open_mafia project.
 
 
 ## Motivation
